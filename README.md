@@ -4,6 +4,34 @@ English | [简体中文](./README_ZH.md)
 
 A secure, professional mnemonic phrase splitting tool that uses Shamir's Secret Sharing algorithm to split your mnemonic phrase into multiple shards, with optional OpenPGP encryption for enhanced security. Any specified number of shards can recover the original mnemonic.
 
+## 🚀 Quick Start
+
+### Docker (Recommended)
+```bash
+# Clone and run with Docker
+git clone <repository-url>
+cd MnemonicShards
+docker-compose up -d --build
+# Visit http://localhost:8848
+```
+
+### Local Development
+```bash
+# Clone and run locally
+git clone <repository-url>
+cd MnemonicShards
+bun install && bun run dev
+# Visit http://localhost:5173
+```
+
+### Static File
+```bash
+# Open directly in browser
+open dist/index.html
+# or serve with any static server
+npx http-server dist -p 8080
+```
+
 ## 🔒 Security Features
 
 - **Completely Offline Operation** - Data never leaves your device
@@ -13,21 +41,46 @@ A secure, professional mnemonic phrase splitting tool that uses Shamir's Secret 
 
 ## 🚀 Core Features
 
+### Mnemonic Processing
 - ✅ Support for 12/24 word mnemonic phrases
 - ✅ BIP39 standard word validation
 - ✅ Smart auto-complete suggestions
 - ✅ Duplicate word detection
+- ✅ Real-time word count and validation feedback
+
+### Shamir Secret Sharing
 - ✅ Flexible shard configuration (3-7 shards)
 - ✅ Custom recovery threshold (2-5 shards)
-- ✅ One-click copy/download shards
-- ✅ Perfect mobile adaptation
+- ✅ Professional-grade cryptographic algorithm
+- ✅ Configurable security levels (Conservative to Convenient)
+
+### Security & Encryption
 - ✅ OpenPGP symmetric encryption for shards
-- ✅ Secure password generation
+- ✅ AES-256 encryption standard
+- ✅ Secure password generation with strength validation
 - ✅ Encrypted shard storage support
-- ✅ File upload recovery (support .txt and .gpg files)
+- ✅ Memory-safe password handling (auto-clear)
+
+### User Interface
+- ✅ One-click copy/download shards
+- ✅ Perfect mobile adaptation and touch support
 - ✅ Tab-based recovery interface (paste/upload tabs)
-- ✅ Skip decryption option for mixed file types
 - ✅ Enhanced mnemonic recovery display
+- ✅ Modern, responsive design system
+- ✅ Accessibility-focused interface
+
+### File Management
+- ✅ File upload recovery (support .txt and .gpg files)
+- ✅ Skip decryption option for mixed file types
+- ✅ Batch file processing
+- ✅ Drag-and-drop file support
+- ✅ File size validation (max 5MB)
+
+### Deployment Options
+- ✅ Single file deployment (dist/index.html)
+- ✅ Docker containerization with security hardening
+- ✅ Static site hosting compatible
+- ✅ Completely offline operation
 
 ## 🛠️ Technology Stack
 
@@ -74,6 +127,10 @@ Root directory/
 ├── index.html              # Main page
 ├── package.json            # Project configuration
 ├── vite.config.js          # Build configuration
+├── Dockerfile              # Docker container configuration
+├── docker-compose.yml      # Docker Compose configuration
+├── .dockerignore           # Docker ignore file
+├── DOCKER.md               # Docker deployment guide
 └── dist/                   # Build output
     └── index.html          # Production version (single file deployment)
 ```
@@ -172,6 +229,64 @@ bun run build
 bun run start
 # Visit http://localhost:8080
 ```
+
+### Docker Deployment (Recommended)
+
+The application includes an optimized Docker configuration for secure, containerized deployment:
+
+#### Quick Start
+
+```bash
+# Build and run with Docker Compose
+docker-compose up -d --build
+
+# Access the application
+# Visit http://localhost:8848
+
+# Stop the container
+docker-compose down
+```
+
+#### Advanced Docker Usage
+
+```bash
+# Build the Docker image manually
+docker build -t mnemonic-shards .
+
+# Run the container
+docker run -d \
+  --name mnemonic-shards-app \
+  -p 8848:8848 \
+  --read-only \
+  --security-opt no-new-privileges:true \
+  mnemonic-shards
+
+# Check container status
+docker ps
+
+# View logs
+docker logs mnemonic-shards-app
+
+# Health check
+curl http://localhost:8848/
+```
+
+#### Docker Security Features
+
+- **Multi-stage build** - Minimal final image size
+- **Non-root user** - Runs as unprivileged user (UID 1001)
+- **Read-only filesystem** - Prevents unauthorized modifications
+- **Health checks** - Automatic monitoring of application status
+- **No networking dependencies** - Completely offline operation
+- **Alpine Linux base** - Minimal attack surface
+
+#### Container Benefits
+
+- ✅ **Isolated Environment** - No impact on host system
+- ✅ **Consistent Deployment** - Same environment everywhere
+- ✅ **Easy Scaling** - Simple to deploy multiple instances
+- ✅ **Security Hardened** - Built-in security best practices
+- ✅ **Offline Ready** - No internet connectivity required
 
 ## 📱 Security Recommendations
 

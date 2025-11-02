@@ -1,0 +1,24 @@
+services:
+  mnemonic-shards:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mnemonic-shards:latest
+    container_name: mnemonic-shards-app
+    ports:
+      - "8848:8848"
+    environment:
+      - NODE_ENV=production
+      - PORT=8848
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8848/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp

@@ -4,6 +4,34 @@
 
 一个安全、专业的助记词分片工具，使用 Shamir 秘密分享算法将您的助记词分割成多个分片，并提供可选的 OpenPGP 加密功能以增强安全性。任意指定数量的分片即可恢复原始助记词。
 
+## 🚀 快速开始
+
+### Docker 部署（推荐）
+```bash
+# 克隆并使用 Docker 运行
+git clone <repository-url>
+cd MnemonicShards
+docker-compose up -d --build
+# 访问 http://localhost:8848
+```
+
+### 本地开发
+```bash
+# 克隆并在本地运行
+git clone <repository-url>
+cd MnemonicShards
+bun install && bun run dev
+# 访问 http://localhost:5173
+```
+
+### 静态文件
+```bash
+# 直接在浏览器中打开
+open dist/index.html
+# 或使用任意静态服务器
+npx http-server dist -p 8080
+```
+
 ## 🔒 安全特性
 
 - **完全离线运行** - 数据不会离开您的设备
@@ -13,21 +41,46 @@
 
 ## 🚀 核心功能
 
+### 助记词处理
 - ✅ 支持 12/24 个助记词输入
 - ✅ BIP39 标准单词验证
 - ✅ 智能自动完成建议
 - ✅ 重复单词检测
+- ✅ 实时单词计数和验证反馈
+
+### Shamir 秘密分享
 - ✅ 灵活的分片配置（3-7 个分片）
 - ✅ 自定义恢复阈值（2-5 个分片）
-- ✅ 一键复制/下载分片
-- ✅ 移动端完美适配
+- ✅ 专业级密码学算法
+- ✅ 可配置的安全级别（从保守到便捷）
+
+### 安全与加密
 - ✅ 分片 OpenPGP 对称加密
-- ✅ 安全密码生成
+- ✅ AES-256 加密标准
+- ✅ 安全密码生成及强度验证
 - ✅ 加密分片存储支持
-- ✅ 文件上传恢复（支持 .txt 和 .gpg 文件）
+- ✅ 内存安全密码处理（自动清除）
+
+### 用户界面
+- ✅ 一键复制/下载分片
+- ✅ 移动端完美适配和触摸支持
 - ✅ 标签式恢复界面（粘贴/上传标签）
-- ✅ 跳过解密选项（适用于混合文件类型）
 - ✅ 增强的助记词恢复显示
+- ✅ 现代响应式设计系统
+- ✅ 无障碍友好界面
+
+### 文件管理
+- ✅ 文件上传恢复（支持 .txt 和 .gpg 文件）
+- ✅ 跳过解密选项（适用于混合文件类型）
+- ✅ 批量文件处理
+- ✅ 拖拽文件支持
+- ✅ 文件大小验证（最大 5MB）
+
+### 部署选项
+- ✅ 单文件部署（dist/index.html）
+- ✅ 容器化部署及安全加固
+- ✅ 静态站点托管兼容
+- ✅ 完全离线运行
 
 ## 🛠️ 技术栈
 
@@ -74,6 +127,10 @@ src/
 ├── index.html              # 主页面
 ├── package.json            # 项目配置
 ├── vite.config.js          # 构建配置
+├── Dockerfile              # Docker 容器配置
+├── docker-compose.yml      # Docker Compose 配置
+├── .dockerignore           # Docker 忽略文件
+├── DOCKER.md               # Docker 部署指南
 └── dist/                   # 构建输出
     └── index.html          # 生产版本（单文件部署）
 ```
@@ -172,6 +229,64 @@ bun run build
 bun run start
 # 访问 http://localhost:8080
 ```
+
+### Docker 部署（推荐）
+
+应用程序包含优化的 Docker 配置，用于安全的容器化部署：
+
+#### 快速启动
+
+```bash
+# 使用 Docker Compose 构建并运行
+docker-compose up -d --build
+
+# 访问应用程序
+# 访问 http://localhost:8848
+
+# 停止容器
+docker-compose down
+```
+
+#### 高级 Docker 用法
+
+```bash
+# 手动构建 Docker 镜像
+docker build -t mnemonic-shards .
+
+# 运行容器
+docker run -d \
+  --name mnemonic-shards-app \
+  -p 8848:8848 \
+  --read-only \
+  --security-opt no-new-privileges:true \
+  mnemonic-shards
+
+# 检查容器状态
+docker ps
+
+# 查看日志
+docker logs mnemonic-shards-app
+
+# 健康检查
+curl http://localhost:8848/
+```
+
+#### Docker 安全特性
+
+- **多阶段构建** - 最小化最终镜像大小
+- **非 root 用户** - 以非特权用户身份运行（UID 1001）
+- **只读文件系统** - 防止未授权修改
+- **健康检查** - 自动监控应用程序状态
+- **无网络依赖** - 完全离线运行
+- **Alpine Linux 基础** - 最小攻击面
+
+#### 容器优势
+
+- ✅ **隔离环境** - 对主机系统无影响
+- ✅ **一致性部署** - 到处都是相同的环境
+- ✅ **易于扩展** - 简单部署多个实例
+- ✅ **安全加固** - 内置安全最佳实践
+- ✅ **离线就绪** - 无需互联网连接
 
 ## 📱 安全建议
 
