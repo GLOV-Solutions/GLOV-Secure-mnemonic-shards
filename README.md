@@ -1,8 +1,24 @@
-# MnemonicShards
+# GLOV Secure – Mnemonic Shards
 
-English | [简体中文](./README_ZH.md)
+A privacy-first tool designed for offline backup and recovery of crypto seed phrases using Shamir’s Secret Sharing (SSS) and optional SLIP-39 mnemonics.
 
-A secure, professional mnemonic phrase splitting tool that uses Shamir's Secret Sharing algorithm to split your mnemonic phrase into multiple shards, with optional OpenPGP encryption for enhanced security. Any specified number of shards can recover the original mnemonic.
+This fork of MnemonicShards
+ by GLOV Secure introduces:
+
+🛡️ Hardened, network-isolated build (no external requests, strict CSP, offline-only service worker)
+
+🧱 Single-file static bundle (index.html) for safe offline usage or embedded deployment
+
+🔐 Optional SLIP-39 mode for human-readable recovery shares (Trezor-compatible)
+
+📜 SHA-256 hash manifest for build verification
+
+💾 Designed for ESP32-S3 hardware: the tool can be hosted locally by a small device creating its own Wi-Fi access point and web UI — no data ever leaves the browser.
+
+All operations (seed input, splitting, recombining) are executed client-side.
+No seeds, shares, or user data are transmitted or stored.
+
+👉 Ideal for individuals and institutions seeking non-custodial, air-gapped, and auditable seed backup under the GLOV Secure suite.
 
 ## 🚀 Quick Start
 
