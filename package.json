@@ -9,6 +9,7 @@
     "dev": "bun run vite",
     "serve": "bun --bun run vite preview --port 8080",
     "build": "bun run vite build",
+    "build:single": "bun run vite build && node tools/inline-build.mjs && node tools/hash.mjs",
     "preview": "bun run vite preview",
     "start:npm": "npx http-server -p 8080 -o",
     "dev:npm": "npm run dev",
@@ -37,7 +38,8 @@
   "license": "ISC",
   "dependencies": {
     "openpgp": "^6.2.2",
-    "shamir-secret-sharing": "^0.0.4"
+    "shamir-secret-sharing": "^0.0.4",
+    "html-minifier": "^4.0.0"
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",

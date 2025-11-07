@@ -6,10 +6,12 @@
 export const LANGUAGES = {
   EN: 'en',
   ZH: 'zh',
+  FR: 'fr',
 };
 
 export const LANGUAGE_NAMES = {
   [LANGUAGES.EN]: 'English',
+  [LANGUAGES.FR]: 'Français',
   [LANGUAGES.ZH]: '中文',
 };
 
@@ -211,6 +213,206 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
 
     // 语言切换
     language: 'Language',
+  },
+
+  [LANGUAGES.FR]: {
+    appTitle: 'MnemonicShards',
+    appDescription:
+      'Divisez en toute sécurité votre phrase mnémonique en plusieurs fragments. N’importe quel nombre spécifié de fragments peut reconstituer la phrase originale.',
+
+    configTitle: 'Options de configuration',
+    wordCountLabel: 'Nombre de mots de la phrase mnémonique',
+    words12: '12 mots',
+    words24: '24 mots',
+    totalSharesLabel: 'Nombre total de fragments',
+    thresholdLabel: 'Fragments requis pour la récupération',
+    sharesOption: (count) => `${count} fragments`,
+
+    inputTitle: 'Saisir la phrase mnémonique',
+    generateBtn: 'Générer les fragments',
+
+    recoverTitle: 'Récupérer la phrase mnémonique',
+    recoverInstructions: `
+      <strong>Instructions :</strong><br />
+      1. Collez chaque fragment dans la zone ci-dessous, un fragment par ligne<br />
+      2. Le format du fragment doit être une chaîne Base64 complète<br />
+      3. Le nombre minimal de fragments doit être atteint pour lancer la récupération<br />
+      4. Les fragments supplémentaires seront ignorés automatiquement
+    `,
+    recoverBtn: 'Récupérer la phrase',
+    recoverPlaceholder: `Collez ici le contenu des fragments, un par ligne...
+
+Astuce : Collez plusieurs fragments d’un coup, le système gérera automatiquement les retours à la ligne
+
+Exemple de format:
+eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
+eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjIsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
+eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9`,
+    waitingForInput: 'En attente des fragments...',
+
+    pasteInputTab: 'Coller le texte',
+    fileUploadTab: 'Téléverser des fichiers',
+    uploadInstructions: `
+      <strong>Instructions :</strong><br />
+      1. Glissez-déposez des fichiers de fragments ici ou cliquez pour sélectionner des fichiers<br />
+      2. Formats pris en charge : .txt (fragments standard) et .gpg (fragments chiffrés)<br />
+      3. Vous pouvez sélectionner plusieurs fichiers à la fois<br />
+      4. Les fichiers seront traités immédiatement après le téléversement
+    `,
+    dragDropHint: 'Glissez-déposez des fichiers ici ou cliquez pour sélectionner',
+    selectFiles: 'Sélectionner des fichiers',
+    supportedFormats: 'Formats pris en charge : .txt, .gpg',
+    uploadedFiles: 'Fichiers téléversés',
+    clearAllFiles: 'Tout effacer',
+    waitingForUpload: 'En attente de téléversement...',
+    encryptionConfirmation: 'Activer le déchiffrement ?',
+    uploadConfirmationMessage:
+      'Souhaitez-vous activer le déchiffrement pour les fichiers téléversés ? Si vous avez des fichiers chiffrés (.gpg), vous devez activer le déchiffrement pour les traiter.',
+    confirmEncryption: 'Oui, activer le déchiffrement',
+    skipEncryption: 'Non, ignorer',
+    encryptionRequired: 'Le déchiffrement est requis pour les fichiers chiffrés',
+    insufficientSharesAfterDecryption: (required, provided) =>
+      `Fragments insuffisants après déchiffrement. Au moins ${required} fragments sont nécessaires, ${provided} fournis.`,
+    sharesDecrypted: (valid, threshold) => `Déchiffrement réussi de ${valid} fragments (besoin de ${threshold})`,
+    encryptionPasswordTitle: 'Mot de passe de déchiffrement',
+    encryptionPasswordDesc:
+      'Saisissez le mot de passe pour déchiffrer vos fichiers chiffrés (.gpg). Tous les fichiers chiffrés utiliseront le même mot de passe.',
+    applyDecryption: 'Appliquer le déchiffrement',
+    skipDecryption: 'Ignorer le déchiffrement',
+
+    sharesTitle: 'Fragments générés',
+    securityTip:
+      `<strong>Conseil de sécurité :</strong> Stockez ces fragments dans des lieux sûrs distincts. N’importe quels <span id="thresholdDisplay"></span> fragments peuvent reconstituer la phrase complète.`,
+
+    securityNotice:
+      "<strong>Mode sécurité :</strong> Utilisation de l’algorithme professionnel de partage de secret de Shamir, fonctionne entièrement hors ligne, vos données ne quittent jamais votre appareil. Il est recommandé d’utiliser cet outil sans connexion pour une sécurité maximale.",
+
+    errors: {
+      fillAllWords: 'Veuillez renseigner tous les mots de la phrase !',
+      invalidWord: (index) =>
+        `Le mot ${index} n’est pas un mot BIP39 valide, veuillez en choisir un dans la liste.`,
+      invalidWordCleared: (index) =>
+        `<strong>Phrase invalide :</strong> le mot ${index} n’est pas un mot BIP39 valide et a été effacé automatiquement. Veuillez choisir un mot valide dans la liste.`,
+      duplicateWords: (words) => `Mots en double : ${words.join(', ')}. Chaque mot doit être unique.`,
+      invalidShareFormat: 'Format de fragment invalide. Veuillez vérifier votre saisie.',
+      insufficientShares: (required, provided) =>
+        `Fragments insuffisants. Au moins ${required} fragments sont nécessaires, ${provided} fournis.`,
+      duplicateShares: 'Fragments en double détectés. Chaque fragment doit être unique.',
+      recoveryFailed: 'Échec de la récupération : ',
+      noValidShares: 'Aucune donnée de fragment valide trouvée',
+      checkShareFormat:
+        'Vérifiez le format des fragments, chaque ligne doit contenir un fragment complet',
+      copyFailed: 'Échec de la copie dans le presse-papiers',
+      downloadFailed: 'Échec du téléchargement, veuillez réessayer',
+      encryptionFieldsMissing: 'Champs de chiffrement manquants',
+      fileTypeNotSupported: 'Type de fichier non pris en charge : {0}',
+      fileTooLarge: 'Fichier trop volumineux : {0}',
+      duplicateFile: 'Fichier en double : {0}',
+    },
+
+    success: {
+      sharesGenerated: 'Fragments générés avec succès ! Conservez-les en lieu sûr.',
+      mnemonicRecovered: 'Phrase mnémonique récupérée avec succès !',
+      copySuccess: 'Copié dans le presse-papiers !',
+      shareDownloaded: (index) => `Fragment ${index} téléchargé`,
+      encryptedShareDownloaded: (index) => `Fragment chiffré ${index} téléchargé`,
+      recoverySuccess: 'Récupération réussie !',
+    },
+
+    warnings: {
+      duplicateWordsDetected: 'Mots en double détectés :',
+      uniqueWordsNote:
+        'Les mots de la phrase doivent être uniques, veuillez corriger les doublons.',
+      duplicateWords: (words) => `Mots en double détectés : ${words.join(', ')}`,
+    },
+
+    info: {
+      recovering: 'Récupération en cours...',
+      validShares: (valid, threshold) =>
+        `${valid} fragments valides détectés (besoin de ${threshold}), la récupération peut commencer`,
+    },
+
+    fileStatus: {
+      processing: 'Traitement...',
+      valid: 'Fragment valide',
+      invalid: 'Format invalide',
+      encrypted: 'Chiffré - en attente de déchiffrement',
+      unknown: 'Statut inconnu',
+    },
+
+    copy: 'Copier',
+    download: 'Télécharger',
+    share: (index) => `Fragment ${index}`,
+
+    wordLabel: (index) => `${index}. Mot`,
+    wordPlaceholder: (index) => `Mot ${index}`,
+    position: 'Position',
+
+    shareFilePrefix: 'Fragment',
+
+    mnemonic: 'Phrase mnémonique',
+    shares: 'fragments',
+    sharesUsed: 'Fragments utilisés',
+    need: 'besoin',
+    recoveryTime: 'Temps de récupération',
+
+    fileTemplate: {
+      appName: 'MnemonicShards',
+      shareContent: 'Contenu du fragment',
+      generatedTime: 'Date de génération',
+      securityTips: 'Conseils de sécurité',
+      tip1: 'Conservez ce fichier dans un endroit sûr',
+      tip2: 'Ne partagez pas ce fragment avec des personnes non fiables',
+      tip3: 'N’importe quel nombre spécifié de fragments peut reconstituer la phrase originale',
+    },
+
+    encryption: {
+      title: 'Options de chiffrement',
+      enableEncryption: 'Activer le chiffrement',
+      encryptionDescription:
+        'Ajoutez une couche de sécurité en chiffrant chaque fragment avec un mot de passe',
+      passwordLabel: 'Mot de passe',
+      confirmPasswordLabel: 'Confirmer le mot de passe',
+      passwordPlaceholder: 'Saisir le mot de passe de chiffrement',
+      confirmPasswordPlaceholder: 'Confirmer le mot de passe de chiffrement',
+      passwordTip:
+        'Assurez-vous de mémoriser votre mot de passe, il sera nécessaire pour récupérer la phrase',
+      weakPassword:
+        'Mot de passe trop faible, utilisez au moins 8 caractères avec lettres, chiffres et symboles',
+      passwordMismatch: 'Les mots de passe ne correspondent pas',
+      encryptingShares: 'Chiffrement des fragments...',
+      encryptingShare: (index) => `Chiffrement du fragment ${index}...`,
+      encryptedSharesTitle: 'Fragments chiffrés générés',
+      encryptionSuccess: 'Chiffrement réussi !',
+      encryptionFailed: 'Échec du chiffrement : ',
+      decryptionFailed: 'Échec du déchiffrement : ',
+      invalidPassword: 'Mot de passe invalide, veuillez vérifier et réessayer',
+      encryptionInfo:
+        'Chaque fragment sera chiffré au format OpenPGP, compatible avec les outils GPG. Le même mot de passe sera requis lors de la récupération.',
+      securityNotice:
+        'Les fragments chiffrés offrent une sécurité supplémentaire s’ils sont stockés dans des lieux potentiellement compromis.',
+      passwordRequired: 'Le mot de passe est requis pour le déchiffrement',
+      decryptingShares: 'Déchiffrement des fragments...',
+      encryptedShareNotice:
+        'FRAGMENT CHIFFRÉ - Ce fragment est chiffré au format OpenPGP et nécessite un mot de passe pour la récupération',
+      encryptedShareTip:
+        'Ce fragment est chiffré au format OpenPGP (compatible GPG). Vous devrez utiliser le même mot de passe qu’à la génération pour récupérer la phrase.',
+      gpgCompatibility:
+        'Ce fragment chiffré peut être déchiffré avec la commande GPG : gpg --decrypt shard1.gpg',
+      encryptedFileDetected: 'Fichiers chiffrés détectés. Mot de passe requis pour le déchiffrement.',
+      noEncryptedFiles: 'Aucun fichier chiffré à déchiffrer',
+    },
+
+    passwordDialog: {
+      title: 'Saisir le mot de passe de déchiffrement',
+      retryTitle: 'Mot de passe incorrect',
+      message: 'Veuillez saisir le mot de passe pour déchiffrer les fragments.',
+      retryMessage: 'Le mot de passe saisi est incorrect. Veuillez réessayer.',
+      confirm: 'Confirmer',
+      cancel: 'Annuler',
+    },
+
+    language: 'Langue',
   },
 
   [LANGUAGES.ZH]: {

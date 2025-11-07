@@ -470,3 +470,15 @@ if (typeof window !== 'undefined') {
   window.MnemonicSplitApp = MnemonicSplitApp;
   window.app = app;
 }
+
+// Register the service worker on window load (if supported)
+// - Ensures offline caching for same-origin assets via public/sw.js
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Best-effort registration; ignore errors to avoid breaking the app
+    // Use Vite base URL so the SW is found under GitHub Pages subpath as well
+    const base = (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/';
+    const swUrl = base.replace(/\/$/, '') + '/sw.js';
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  });
+}
