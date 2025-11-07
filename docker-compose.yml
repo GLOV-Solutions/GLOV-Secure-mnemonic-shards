@@ -1,10 +1,10 @@
 services:
-  mnemonic-shards:
+  glov-secure-mnemonic-shards:
     build:
       context: .
       dockerfile: Dockerfile
-    image: mnemonic-shards:latest
-    container_name: mnemonic-shards-app
+    image: glov-secure-mnemonic-shards:latest
+    container_name: glov-secure-mnemonic-shards-app
     ports:
       - "8848:8848"
     environment:

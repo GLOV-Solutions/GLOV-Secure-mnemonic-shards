@@ -1,5 +1,5 @@
 {
-  "name": "mnemonic-shards",
+  "name": "glov-secure-mnemonic-shards",
   "version": "1.0.0",
   "description": "Professional mnemonic seed phrase splitting tool using Shamir Secret Sharing with file upload recovery, tab-based interface, and OpenPGP encryption support",
   "main": "index.js",
