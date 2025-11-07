@@ -17,6 +17,17 @@
   <body>
     <div class="container">
       <div class="header">
+        <!-- Company logo (offline local asset) -->
+        <a href="https://glov-solutions.com/" target="_blank" rel="noopener" class="logo-link">
+          <img
+            src="/assets/glov-secure-logo.png"
+            alt="GLOV Secure Logo"
+            title="GLOV Secure — A GLOV Solutions Project"
+            class="logo-img"
+            style="max-height: 64px; margin-bottom: 10px"
+          />
+        </a>
+
         <!-- Language Switcher (client-side only, no network calls) -->
         <div class="language-switcher">
           <span class="language-switcher-label" data-i18n="language">Language</span>
@@ -26,7 +37,7 @@
           </div>
         </div>
 
-        <!-- External links: GLOV Solutions website & this fork's repository -->
+        <!-- External links: GLOV Solutions website & repository -->
         <nav class="top-links" aria-label="External links">
           <a
             class="top-link"
@@ -50,10 +61,11 @@
         <h1>GLOV Secure — Mnemonic Shards</h1>
         <p data-i18n="appDescription">
           Securely split your BIP-39 mnemonic into multiple shards using Shamir’s Secret Sharing.
-          Optionally use SLIP-39 mnemonics for human-readable shares. Everything runs fully offline
-          in your browser; no data ever leaves your device.
+          Optionally use SLIP-39 mnemonics for human-readable shares. Everything runs fully offline in
+          your browser; no data ever leaves your device.
         </p>
       </div>
+
 
       <div class="main-content">
         <!-- Security notice (runs offline, recommend air-gapped usage) -->

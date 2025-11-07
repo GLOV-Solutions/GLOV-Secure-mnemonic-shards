@@ -2,6 +2,10 @@
  * 助记词输入组件
  * 负责处理助记词输入、验证和自动完成功能
  */
+/**
+ * Mnemonic input component: renders inputs, suggestions, and validation.
+ * Provides duplicate detection and mobile/desktop autocomplete behavior.
+ */
 
 import { getElement, createElement, toggleElement, toggleClass, addEvent, clearElement } from '../utils/dom.js';
 import { isValidBIP39Word } from '../utils/validation.js';
@@ -17,6 +21,7 @@ export class MnemonicInput {
     this.suggestionCache = new Map();
 
     // 监听语言变化
+    // Lazy-load i18n and re-render on language change
     import('../utils/i18n.js').then(({ i18n }) => {
       i18n.addListener(() => {
         this.renderInputs();
@@ -28,6 +33,10 @@ export class MnemonicInput {
    * 设置助记词数量
    * @param {number} count - 助记词数量
    */
+  /**
+   * Set total mnemonic word count.
+   * @param {number} count - Number of words (12 or 24)
+   */
   setWordCount(count) {
     this.wordCount = count;
     this.renderInputs();
@@ -36,11 +45,13 @@ export class MnemonicInput {
   /**
    * 渲染输入框
    */
+  /** Render input fields for the current word count. */
   renderInputs() {
     const container = getElement(SELECTORS.WORDS_GRID);
     if (!container) return;
 
     // 保存当前输入的值
+    // Preserve any existing values before re-rendering the inputs
     const currentValues = new Map();
     for (let i = 1; i <= this.wordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
@@ -56,11 +67,13 @@ export class MnemonicInput {
       container.appendChild(wordInput);
 
       // 恢复之前输入的值
+      // Restore previously entered word if present
       if (currentValues.has(i)) {
         const input = getElement(SELECTORS.WORD_INPUT(i));
         if (input) {
           input.value = currentValues.get(i);
           // 恢复验证样式
+          // Validate and style the restored value
           this.validateAndStyleInput(input, i);
         }
       }
@@ -71,6 +84,11 @@ export class MnemonicInput {
    * 创建单个助记词输入框
    * @param {number} index - 输入框索引
    * @returns {Element} 输入框元素
+   */
+  /**
+   * Create a single word input field.
+   * @param {number} index - 1-based word position
+   * @returns {Element}
    */
   createWordInput(index) {
     const wrapper = createElement('div', ['word-input']);
@@ -108,6 +126,11 @@ export class MnemonicInput {
    * @param {Element} input - 输入框元素
    * @param {number} index - 输入框索引
    */
+  /**
+   * Attach event listeners for input, blur, and focus.
+   * @param {Element} input
+   * @param {number} index
+   */
   attachInputListeners(input, index) {
     const debouncedHandler = debounce(() => {
       this.handleInputChange(input, index);
@@ -134,10 +157,16 @@ export class MnemonicInput {
    * @param {Element} input - 输入框元素
    * @param {number} index - 输入框索引
    */
+  /**
+   * Debounced input handler for autocomplete and duplicate checks.
+   * @param {Element} input
+   * @param {number} index
+   */
   handleInputChange(input, index) {
     const value = input.value.trim().toLowerCase();
 
     // 清除之前的定时器
+    // Clear any pending autocomplete timeout before scheduling a new one
     this.clearAutocompleteTimeout(index);
 
     if (value.length === 0) {
@@ -147,6 +176,7 @@ export class MnemonicInput {
     }
 
     // 显示建议
+    // Show suggestions and check duplicates
     this.showSuggestions(value, index);
     this.checkForDuplicateWords();
   }
@@ -155,6 +185,11 @@ export class MnemonicInput {
    * 验证并样式化输入框
    * @param {Element} input - 输入框元素
    * @param {number} index - 输入框索引
+   */
+  /**
+   * Validate a word and apply success/error styles.
+   * @param {Element} input
+   * @param {number} index
    */
   validateAndStyleInput(input, index) {
     const value = input.value.trim();
@@ -182,6 +217,10 @@ export class MnemonicInput {
    * 显示无效单词错误
    * @param {number} index - 输入框索引
    */
+  /**
+   * Display and auto-hide invalid-word alert.
+   * @param {number} index
+   */
   showInvalidWordError(index) {
     const errorAlert = getElement(SELECTORS.INPUT_ERROR_ALERT);
     if (errorAlert) {
@@ -199,12 +238,18 @@ export class MnemonicInput {
    * @param {string} query - 查询字符串
    * @returns {string[]} 匹配的单词列表
    */
+  /**
+   * Search the BIP39 word list by prefix.
+   * @param {string} query
+   * @returns {string[]}
+   */
   searchWords(query) {
     if (!query || query.length === 0) {
       return [];
     }
 
     // 使用缓存
+    // Cache hit
     if (this.suggestionCache.has(query)) {
       return this.suggestionCache.get(query);
     }
@@ -212,6 +257,7 @@ export class MnemonicInput {
     const matches = BIP39_WORDLIST.filter((word) => word.toLowerCase().startsWith(query)).slice(0, UI_CONFIG.SUGGESTIONS.MAX_SUGGESTIONS);
 
     // 缓存结果
+    // Cache store
     this.suggestionCache.set(query, matches);
 
     return matches;
@@ -221,6 +267,11 @@ export class MnemonicInput {
    * 显示建议列表
    * @param {string} query - 查询字符串
    * @param {number} wordIndex - 输入框索引
+   */
+  /**
+   * Show autocomplete suggestions for a word index.
+   * @param {string} query
+   * @param {number} wordIndex
    */
   showSuggestions(query, wordIndex) {
     const suggestions = this.searchWords(query);
@@ -244,6 +295,11 @@ export class MnemonicInput {
    * @param {Element} suggestionsDiv - 建议容器元素
    * @param {number} wordIndex - 输入框索引
    */
+  /**
+   * Position suggestions container (mobile vs desktop).
+   * @param {Element} suggestionsDiv
+   * @param {number} wordIndex
+   */
   positionSuggestions(suggestionsDiv, wordIndex) {
     const input = getElement(SELECTORS.WORD_INPUT(wordIndex));
     if (!input) return;
@@ -252,6 +308,7 @@ export class MnemonicInput {
 
     if (mobile) {
       // 移动端固定定位
+      // Mobile: fixed bottom suggestions tray
       Object.assign(suggestionsDiv.style, {
         position: 'fixed',
         top: 'auto',
@@ -273,6 +330,7 @@ export class MnemonicInput {
       const containerWidth = containerRect.width;
       const isNearRightEdge = inputRelativeLeft > containerWidth * 0.6;
 
+      // Desktop: positioned below input (RTL-aware)
       Object.assign(suggestionsDiv.style, {
         position: 'absolute',
         top: '100%',
@@ -289,6 +347,12 @@ export class MnemonicInput {
    * @param {Element} container - 建议容器
    * @param {string[]} suggestions - 建议列表
    * @param {number} wordIndex - 输入框索引
+   */
+  /**
+   * Render clickable suggestion items.
+   * @param {Element} container
+   * @param {string[]} suggestions
+   * @param {number} wordIndex
    */
   renderSuggestionItems(container, suggestions, wordIndex) {
     const suggestionsContainer = createElement('div', ['suggestions-container']);
@@ -337,6 +401,13 @@ export class MnemonicInput {
    * @param {boolean} mobile - 是否为移动端
    * @returns {Element} 建议项元素
    */
+  /**
+   * Create one suggestion pill/button.
+   * @param {string} word
+   * @param {number} wordIndex
+   * @param {boolean} mobile
+   * @returns {Element}
+   */
   createSuggestionItem(word, wordIndex, mobile) {
     const item = createElement('div', ['suggestion-item']);
     item.textContent = word;
@@ -375,6 +446,11 @@ export class MnemonicInput {
    * @param {string} word - 单词
    * @param {number} wordIndex - 输入框索引
    */
+  /**
+   * Apply the selected suggestion into the input.
+   * @param {string} word
+   * @param {number} wordIndex
+   */
   selectWord(word, wordIndex) {
     const input = getElement(SELECTORS.WORD_INPUT(wordIndex));
     if (!input) return;
@@ -383,6 +459,7 @@ export class MnemonicInput {
     toggleClass(input, CSS_CLASSES.INVALID_WORD, false);
     toggleClass(input, CSS_CLASSES.VALID_WORD, true);
 
+    // Hide suggestions and re-check for duplicates
     this.hideSuggestions(wordIndex);
     this.checkForDuplicateWords();
 
@@ -397,6 +474,7 @@ export class MnemonicInput {
    * 隐藏建议列表
    * @param {number} wordIndex - 输入框索引
    */
+  /** Hide and clear the suggestions container. */
   hideSuggestions(wordIndex) {
     const suggestionsDiv = getElement(SELECTORS.SUGGESTIONS(wordIndex));
     if (suggestionsDiv) {
@@ -408,12 +486,14 @@ export class MnemonicInput {
   /**
    * 检查重复单词
    */
+  /** Detect duplicate words and update UI hints. */
   checkForDuplicateWords() {
     const words = [];
     const duplicates = new Set();
     const duplicatePositions = new Map();
 
     // 收集所有输入的单词
+    // Collect words and track duplicate positions
     for (let i = 1; i <= this.wordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
       if (!input) continue;
@@ -441,15 +521,22 @@ export class MnemonicInput {
    * @param {Set} duplicates - 重复单词集合
    * @param {Map} duplicatePositions - 重复单词位置映射
    */
+  /**
+   * Render duplicate word details for the alert.
+   * @param {Set<string>} duplicates
+   * @param {Map<string, number[]>} duplicatePositions
+   */
   updateDuplicateAlert(duplicates, duplicatePositions) {
     const duplicateAlert = getElement(SELECTORS.DUPLICATE_ALERT);
     if (!duplicateAlert) return;
 
     // 清空之前的内容
+    // Reset alert contents
     duplicateAlert.innerHTML = '';
 
     if (duplicates.size > 0) {
       // 创建安全的DOM结构，防止XSS攻击
+      // Use textContent to avoid XSS
       const strongTitle = document.createElement('strong');
       strongTitle.textContent = t('warnings.duplicateWordsDetected');
       duplicateAlert.appendChild(strongTitle);
@@ -481,6 +568,10 @@ export class MnemonicInput {
    * 更新重复单词样式
    * @param {Set} duplicates - 重复单词集合
    */
+  /**
+   * Toggle duplicate styling on inputs.
+   * @param {Set<string>} duplicates
+   */
   updateDuplicateStyling(duplicates) {
     for (let i = 1; i <= this.wordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
@@ -497,6 +588,7 @@ export class MnemonicInput {
    * 清除自动完成定时器
    * @param {number} index - 输入框索引
    */
+  /** Clear any pending autocomplete timeout. */
   clearAutocompleteTimeout(index) {
     if (this.autocompleteTimeouts.has(index)) {
       clearTimeout(this.autocompleteTimeouts.get(index));
@@ -507,6 +599,10 @@ export class MnemonicInput {
   /**
    * 获取所有输入的单词
    * @returns {string[]} 单词数组
+   */
+  /**
+   * Collect all non-empty words in order.
+   * @returns {string[]}
    */
   getWords() {
     const words = [];
@@ -525,6 +621,10 @@ export class MnemonicInput {
   /**
    * 验证所有输入
    * @returns {Object} 验证结果
+   */
+  /**
+   * Validate that all inputs are non-empty and valid BIP39 words.
+   * @returns {{isValid: boolean, words: string[], hasEmpty: boolean, hasInvalidWord: boolean, invalidWordIndex: number}}
    */
   validateAllInputs() {
     const words = [];
@@ -563,6 +663,7 @@ export class MnemonicInput {
   /**
    * 清理资源
    */
+  /** Cleanup resources and caches. */
   destroy() {
     // 清理所有定时器
     this.autocompleteTimeouts.forEach((timeoutId) => {

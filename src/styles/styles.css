@@ -3,6 +3,10 @@
  * 将内联CSS提取到独立文件中，便于维护
  */
 
+/**
+ * Stylesheet for GLOV Secure - Mnemonic Shards
+ * Layout, inputs, tabs, upload, recovery, dialogs
+ */
 /* Design System */
 :root {
   /* Colors */
@@ -112,6 +116,18 @@ body {
   max-width: 600px;
   margin: 0 auto;
 }
+
+/* Logo styling */
+.logo-link {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+.logo-img {
+  max-height: 64px;
+  height: auto;
+  width: auto;
+}
+
 
 /* Language Switcher */
 .language-switcher {
@@ -233,6 +249,7 @@ body {
 }
 
 /* 特定样式：助记词数量按钮高度与select元素一致 */
+/* Word-count toggle button styles */
 .btn-group[id='wordCountButtons'] button {
   font-size: var(--font-size-base);
   padding: var(--space-md) var(--space-xl) var(--space-md) var(--space-md);
@@ -557,6 +574,7 @@ select:hover {
 }
 
 /* Tab切换样式 */
+/* Recovery tabs */
 .recovery-tabs {
   display: flex;
   margin-bottom: var(--space-lg);
@@ -611,6 +629,7 @@ select:hover {
 }
 
 /* 文件上传样式 */
+/* Upload area */
 .upload-area {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-md);
@@ -678,6 +697,7 @@ select:hover {
 }
 
 /* 已上传文件列表样式 */
+/* Uploaded files list */
 .uploaded-files {
   margin-bottom: var(--space-lg);
 }
@@ -788,6 +808,7 @@ select:hover {
 }
 
 /* 上传状态样式 */
+/* Upload status */
 .upload-status {
   margin-bottom: var(--space-lg);
   padding: var(--space-md);
@@ -822,11 +843,13 @@ select:hover {
 }
 
 /* 恢复加密选项样式 */
+/* Recovery encryption section */
 .recovery-encryption-section {
   margin-bottom: var(--space-lg);
 }
 
 /* 文件上传加密密码输入区域样式 */
+/* Encryption password section (for decrypting files) */
 .encryption-password-section {
   margin-bottom: var(--space-lg);
   animation: fadeIn var(--transition-base) ease-in-out;
@@ -1065,6 +1088,7 @@ select:hover {
 }
 
 /* 加密选项样式 */
+/* Encryption section */
 .encryption-section {
   margin-bottom: var(--space-lg);
 }
@@ -1242,6 +1266,7 @@ select:hover {
 }
 
 /* 恢复助记词显示样式 */
+/* Recovered mnemonic styling */
 .recovered-mnemonic {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
   font-size: var(--font-size-base);
@@ -1265,6 +1290,7 @@ select:hover {
 }
 
 /* 恢复结果区域样式 */
+/* Recovery result section */
 .recover-result-section {
   margin-top: var(--space-lg);
   animation: fadeIn var(--transition-normal) ease-in-out;
@@ -1468,6 +1494,7 @@ select:hover {
   }
 
   /* 文件上传移动端样式 */
+  /* Mobile: upload area */
   .upload-area {
     padding: var(--space-2xl);
   }
@@ -1738,6 +1765,7 @@ select:hover {
   }
 
   /* 移动端加密密码输入区域样式 */
+  /* Mobile: encryption password section */
   .encryption-password-section {
     padding: var(--space-lg);
   }
