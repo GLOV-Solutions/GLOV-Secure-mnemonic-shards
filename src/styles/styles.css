@@ -1,8 +1,4 @@
-/**
- * 应用样式文件
- * 将内联CSS提取到独立文件中，便于维护
- */
-
+﻿
 /**
  * Stylesheet for GLOV Secure - Mnemonic Shards
  * Layout, inputs, tabs, upload, recovery, dialogs
@@ -248,7 +244,6 @@ body {
   position: relative;
 }
 
-/* 特定样式：助记词数量按钮高度与select元素一致 */
 /* Word-count toggle button styles */
 .btn-group[id='wordCountButtons'] button {
   font-size: var(--font-size-base);
@@ -573,7 +568,6 @@ select:hover {
   margin-top: var(--space-lg);
 }
 
-/* Tab切换样式 */
 /* Recovery tabs */
 .recovery-tabs {
   display: flex;
@@ -628,7 +622,6 @@ select:hover {
   }
 }
 
-/* 文件上传样式 */
 /* Upload area */
 .upload-area {
   border: 2px dashed var(--color-border);
@@ -696,7 +689,6 @@ select:hover {
   transform: translateY(1px);
 }
 
-/* 已上传文件列表样式 */
 /* Uploaded files list */
 .uploaded-files {
   margin-bottom: var(--space-lg);
@@ -807,7 +799,6 @@ select:hover {
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* 上传状态样式 */
 /* Upload status */
 .upload-status {
   margin-bottom: var(--space-lg);
@@ -842,13 +833,11 @@ select:hover {
   border-color: var(--color-warning);
 }
 
-/* 恢复加密选项样式 */
 /* Recovery encryption section */
 .recovery-encryption-section {
   margin-bottom: var(--space-lg);
 }
 
-/* 文件上传加密密码输入区域样式 */
 /* Encryption password section (for decrypting files) */
 .encryption-password-section {
   margin-bottom: var(--space-lg);
@@ -945,7 +934,6 @@ select:hover {
   background: var(--color-surface-tertiary);
 }
 
-/* 加密文件状态指示器 */
 .encrypted-files-indicator {
   display: flex;
   align-items: center;
@@ -985,7 +973,6 @@ select:hover {
   font-weight: 500;
 }
 
-/* 恢复按钮与底部内容框之间的间距 */
 #recoverBtn {
   margin-bottom: var(--space-xl);
 }
@@ -1087,7 +1074,6 @@ select:hover {
   font-size: var(--font-size-sm);
 }
 
-/* 加密选项样式 */
 /* Encryption section */
 .encryption-section {
   margin-bottom: var(--space-lg);
@@ -1206,7 +1192,7 @@ select:hover {
 
 .password-match.valid::before,
 .password-strength.valid::before {
-  content: '✓';
+  content: 'âœ“';
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -1231,7 +1217,7 @@ select:hover {
 
 .password-match.invalid::before,
 .password-strength.invalid::before {
-  content: '✕';
+  content: 'âœ•';
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -1265,7 +1251,6 @@ select:hover {
   font-weight: 600;
 }
 
-/* 恢复助记词显示样式 */
 /* Recovered mnemonic styling */
 .recovered-mnemonic {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
@@ -1289,7 +1274,6 @@ select:hover {
   margin: 0 2px;
 }
 
-/* 恢复结果区域样式 */
 /* Recovery result section */
 .recover-result-section {
   margin-top: var(--space-lg);
@@ -1464,7 +1448,6 @@ select:hover {
     touch-action: manipulation;
   }
 
-  /* Tab切换移动端样式 */
   .recovery-tabs {
     flex-direction: column;
     border-radius: var(--radius-lg);
@@ -1493,7 +1476,6 @@ select:hover {
     padding: var(--space-lg);
   }
 
-  /* 文件上传移动端样式 */
   /* Mobile: upload area */
   .upload-area {
     padding: var(--space-2xl);
@@ -1764,7 +1746,6 @@ select:hover {
     width: 100%;
   }
 
-  /* 移动端加密密码输入区域样式 */
   /* Mobile: encryption password section */
   .encryption-password-section {
     padding: var(--space-lg);

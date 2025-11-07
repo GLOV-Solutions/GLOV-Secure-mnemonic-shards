@@ -1,8 +1,4 @@
-/**
- * 助记词输入组件
- * 负责处理助记词输入、验证和自动完成功能
- */
-/**
+﻿/**
  * Mnemonic input component: renders inputs, suggestions, and validation.
  * Provides duplicate detection and mobile/desktop autocomplete behavior.
  */
@@ -20,7 +16,6 @@ export class MnemonicInput {
     this.autocompleteTimeouts = new Map();
     this.suggestionCache = new Map();
 
-    // 监听语言变化
     // Lazy-load i18n and re-render on language change
     import('../utils/i18n.js').then(({ i18n }) => {
       i18n.addListener(() => {
@@ -30,10 +25,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 设置助记词数量
-   * @param {number} count - 助记词数量
-   */
-  /**
    * Set total mnemonic word count.
    * @param {number} count - Number of words (12 or 24)
    */
@@ -42,15 +33,11 @@ export class MnemonicInput {
     this.renderInputs();
   }
 
-  /**
-   * 渲染输入框
-   */
   /** Render input fields for the current word count. */
   renderInputs() {
     const container = getElement(SELECTORS.WORDS_GRID);
     if (!container) return;
 
-    // 保存当前输入的值
     // Preserve any existing values before re-rendering the inputs
     const currentValues = new Map();
     for (let i = 1; i <= this.wordCount; i++) {
@@ -66,13 +53,11 @@ export class MnemonicInput {
       const wordInput = this.createWordInput(i);
       container.appendChild(wordInput);
 
-      // 恢复之前输入的值
       // Restore previously entered word if present
       if (currentValues.has(i)) {
         const input = getElement(SELECTORS.WORD_INPUT(i));
         if (input) {
           input.value = currentValues.get(i);
-          // 恢复验证样式
           // Validate and style the restored value
           this.validateAndStyleInput(input, i);
         }
@@ -80,11 +65,6 @@ export class MnemonicInput {
     }
   }
 
-  /**
-   * 创建单个助记词输入框
-   * @param {number} index - 输入框索引
-   * @returns {Element} 输入框元素
-   */
   /**
    * Create a single word input field.
    * @param {number} index - 1-based word position
@@ -122,11 +102,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 为输入框添加事件监听器
-   * @param {Element} input - 输入框元素
-   * @param {number} index - 输入框索引
-   */
-  /**
    * Attach event listeners for input, blur, and focus.
    * @param {Element} input
    * @param {number} index
@@ -153,11 +128,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 处理输入变化
-   * @param {Element} input - 输入框元素
-   * @param {number} index - 输入框索引
-   */
-  /**
    * Debounced input handler for autocomplete and duplicate checks.
    * @param {Element} input
    * @param {number} index
@@ -165,7 +135,6 @@ export class MnemonicInput {
   handleInputChange(input, index) {
     const value = input.value.trim().toLowerCase();
 
-    // 清除之前的定时器
     // Clear any pending autocomplete timeout before scheduling a new one
     this.clearAutocompleteTimeout(index);
 
@@ -175,17 +144,11 @@ export class MnemonicInput {
       return;
     }
 
-    // 显示建议
     // Show suggestions and check duplicates
     this.showSuggestions(value, index);
     this.checkForDuplicateWords();
   }
 
-  /**
-   * 验证并样式化输入框
-   * @param {Element} input - 输入框元素
-   * @param {number} index - 输入框索引
-   */
   /**
    * Validate a word and apply success/error styles.
    * @param {Element} input
@@ -214,10 +177,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 显示无效单词错误
-   * @param {number} index - 输入框索引
-   */
-  /**
    * Display and auto-hide invalid-word alert.
    * @param {number} index
    */
@@ -234,11 +193,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 搜索BIP39单词
-   * @param {string} query - 查询字符串
-   * @returns {string[]} 匹配的单词列表
-   */
-  /**
    * Search the BIP39 word list by prefix.
    * @param {string} query
    * @returns {string[]}
@@ -248,7 +202,6 @@ export class MnemonicInput {
       return [];
     }
 
-    // 使用缓存
     // Cache hit
     if (this.suggestionCache.has(query)) {
       return this.suggestionCache.get(query);
@@ -256,18 +209,12 @@ export class MnemonicInput {
 
     const matches = BIP39_WORDLIST.filter((word) => word.toLowerCase().startsWith(query)).slice(0, UI_CONFIG.SUGGESTIONS.MAX_SUGGESTIONS);
 
-    // 缓存结果
     // Cache store
     this.suggestionCache.set(query, matches);
 
     return matches;
   }
 
-  /**
-   * 显示建议列表
-   * @param {string} query - 查询字符串
-   * @param {number} wordIndex - 输入框索引
-   */
   /**
    * Show autocomplete suggestions for a word index.
    * @param {string} query
@@ -283,18 +230,12 @@ export class MnemonicInput {
     }
 
     clearElement(suggestionsDiv);
-    // 直接设置显示为 block，而不是使用 toggleElement
     suggestionsDiv.style.display = 'block';
 
     this.positionSuggestions(suggestionsDiv, wordIndex);
     this.renderSuggestionItems(suggestionsDiv, suggestions, wordIndex);
   }
 
-  /**
-   * 定位建议列表
-   * @param {Element} suggestionsDiv - 建议容器元素
-   * @param {number} wordIndex - 输入框索引
-   */
   /**
    * Position suggestions container (mobile vs desktop).
    * @param {Element} suggestionsDiv
@@ -307,7 +248,6 @@ export class MnemonicInput {
     const mobile = isMobile();
 
     if (mobile) {
-      // 移动端固定定位
       // Mobile: fixed bottom suggestions tray
       Object.assign(suggestionsDiv.style, {
         position: 'fixed',
@@ -323,7 +263,6 @@ export class MnemonicInput {
         textAlign: 'center',
       });
     } else {
-      // 桌面端绝对定位
       const containerRect = input.closest('.words-grid').getBoundingClientRect();
       const inputRect = input.getBoundingClientRect();
       const inputRelativeLeft = inputRect.left - containerRect.left;
@@ -342,12 +281,6 @@ export class MnemonicInput {
     }
   }
 
-  /**
-   * 渲染建议项
-   * @param {Element} container - 建议容器
-   * @param {string[]} suggestions - 建议列表
-   * @param {number} wordIndex - 输入框索引
-   */
   /**
    * Render clickable suggestion items.
    * @param {Element} container
@@ -369,7 +302,6 @@ export class MnemonicInput {
         webkitOverflowScrolling: 'touch',
       });
     } else {
-      // 检查输入框是否位于右侧
       const input = getElement(SELECTORS.WORD_INPUT(wordIndex));
       const containerRect = input.closest('.words-grid').getBoundingClientRect();
       const inputRect = input.getBoundingClientRect();
@@ -394,13 +326,6 @@ export class MnemonicInput {
     container.appendChild(suggestionsContainer);
   }
 
-  /**
-   * 创建建议项
-   * @param {string} word - 单词
-   * @param {number} wordIndex - 输入框索引
-   * @param {boolean} mobile - 是否为移动端
-   * @returns {Element} 建议项元素
-   */
   /**
    * Create one suggestion pill/button.
    * @param {string} word
@@ -442,11 +367,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 选择单词
-   * @param {string} word - 单词
-   * @param {number} wordIndex - 输入框索引
-   */
-  /**
    * Apply the selected suggestion into the input.
    * @param {string} word
    * @param {number} wordIndex
@@ -463,17 +383,12 @@ export class MnemonicInput {
     this.hideSuggestions(wordIndex);
     this.checkForDuplicateWords();
 
-    // 自动跳转到下一个输入框
     if (wordIndex < this.wordCount) {
       const nextInput = getElement(SELECTORS.WORD_INPUT(wordIndex + 1));
       nextInput?.focus();
     }
   }
 
-  /**
-   * 隐藏建议列表
-   * @param {number} wordIndex - 输入框索引
-   */
   /** Hide and clear the suggestions container. */
   hideSuggestions(wordIndex) {
     const suggestionsDiv = getElement(SELECTORS.SUGGESTIONS(wordIndex));
@@ -483,16 +398,12 @@ export class MnemonicInput {
     }
   }
 
-  /**
-   * 检查重复单词
-   */
   /** Detect duplicate words and update UI hints. */
   checkForDuplicateWords() {
     const words = [];
     const duplicates = new Set();
     const duplicatePositions = new Map();
 
-    // 收集所有输入的单词
     // Collect words and track duplicate positions
     for (let i = 1; i <= this.wordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
@@ -517,11 +428,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 更新重复单词提示
-   * @param {Set} duplicates - 重复单词集合
-   * @param {Map} duplicatePositions - 重复单词位置映射
-   */
-  /**
    * Render duplicate word details for the alert.
    * @param {Set<string>} duplicates
    * @param {Map<string, number[]>} duplicatePositions
@@ -530,12 +436,10 @@ export class MnemonicInput {
     const duplicateAlert = getElement(SELECTORS.DUPLICATE_ALERT);
     if (!duplicateAlert) return;
 
-    // 清空之前的内容
     // Reset alert contents
     duplicateAlert.innerHTML = '';
 
     if (duplicates.size > 0) {
-      // 创建安全的DOM结构，防止XSS攻击
       // Use textContent to avoid XSS
       const strongTitle = document.createElement('strong');
       strongTitle.textContent = t('warnings.duplicateWordsDetected');
@@ -565,10 +469,6 @@ export class MnemonicInput {
   }
 
   /**
-   * 更新重复单词样式
-   * @param {Set} duplicates - 重复单词集合
-   */
-  /**
    * Toggle duplicate styling on inputs.
    * @param {Set<string>} duplicates
    */
@@ -584,10 +484,6 @@ export class MnemonicInput {
     }
   }
 
-  /**
-   * 清除自动完成定时器
-   * @param {number} index - 输入框索引
-   */
   /** Clear any pending autocomplete timeout. */
   clearAutocompleteTimeout(index) {
     if (this.autocompleteTimeouts.has(index)) {
@@ -596,10 +492,6 @@ export class MnemonicInput {
     }
   }
 
-  /**
-   * 获取所有输入的单词
-   * @returns {string[]} 单词数组
-   */
   /**
    * Collect all non-empty words in order.
    * @returns {string[]}
@@ -618,10 +510,6 @@ export class MnemonicInput {
     return words;
   }
 
-  /**
-   * 验证所有输入
-   * @returns {Object} 验证结果
-   */
   /**
    * Validate that all inputs are non-empty and valid BIP39 words.
    * @returns {{isValid: boolean, words: string[], hasEmpty: boolean, hasInvalidWord: boolean, invalidWordIndex: number}}
@@ -660,18 +548,13 @@ export class MnemonicInput {
     };
   }
 
-  /**
-   * 清理资源
-   */
   /** Cleanup resources and caches. */
   destroy() {
-    // 清理所有定时器
     this.autocompleteTimeouts.forEach((timeoutId) => {
       clearTimeout(timeoutId);
     });
     this.autocompleteTimeouts.clear();
 
-    // 清理缓存
     this.suggestionCache.clear();
   }
 }
