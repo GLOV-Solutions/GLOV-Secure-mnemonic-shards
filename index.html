@@ -100,18 +100,22 @@
           </div>
         </div>
 
+                <!-- Mnemonic input section — ALWAYS visible -->
+        <div class="section" id="mnemonicInputSection">
+          <div class="section-title" data-i18n="inputTitle">Enter Mnemonic Phrase</div>
+
+          <div id="inputErrorAlert" style="display:none" class="alert alert-error"></div>
+          <div id="duplicateAlert" style="display:none" class="alert alert-warning"></div>
+          <div id="generalErrorAlert" style="display:none" class="alert alert-error"></div>
+          <div id="successAlert" style="display:none" class="alert alert-success"></div>
+
+          <div class="words-grid" id="wordsGrid"><!-- inputs generated dynamically --></div>
+        </div>
+
         <!-- ==================== BIP-39 / SHAMIR MODE ==================== -->
         <div id="modeBip39" class="mode-panel">
           <!-- Mnemonic input -->
           <div class="section">
-            <div class="section-title" data-i18n="inputTitle">Enter Mnemonic Phrase</div>
-
-            <div id="inputErrorAlert" style="display: none" class="alert alert-error"></div>
-            <div id="duplicateAlert" style="display: none" class="alert alert-warning"></div>
-            <div id="generalErrorAlert" style="display: none" class="alert alert-error"></div>
-            <div id="successAlert" style="display: none" class="alert alert-success"></div>
-
-            <div class="words-grid" id="wordsGrid"></div>
 
             <button class="action-btn" id="generateBtn" data-i18n="generateBtn">
               Generate Shares
