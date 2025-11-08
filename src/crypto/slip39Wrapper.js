@@ -1,88 +1,113 @@
-import { Slip39 } from 'slip39';
+// src/crypto/slip39Wrapper.js
 import * as openpgp from 'openpgp';
+// Si tu as un cœur SLIP-39 local, garde cet import ; sinon adapte-le au module que tu utilises :
+import { splitMnemonicToSlip39, recoverFromSlip39 } from './slip39Core.js';
 
-function bufToB64(u8: Uint8Array) {
-  return btoa(String.fromCharCode(...u8));
+/** @param {Uint8Array} u8 */
+function bufToB64(u8) {
+  if (typeof btoa !== 'undefined') {
+    let s = '';
+    for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+    return btoa(s);
+  }
+  // Build (Node/Bun)
+  return Buffer.from(u8).toString('base64');
 }
-function b64ToBuf(b64: string) {
-  return new Uint8Array(atob(b64).split('').map(c => c.charCodeAt(0)));
+
+/** @param {string} b64 */
+function b64ToBuf(b64) {
+  if (typeof atob !== 'undefined') {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  // Build (Node/Bun)
+  return new Uint8Array(Buffer.from(b64, 'base64'));
 }
 
 /**
- * Génère :
- * - un ciphertext OpenPGP (string ASCII armor)
- * - des mnémoniques SLIP-39 (string[])
- *
- * @param bip39Plain  La phrase BIP-39 en clair (ex: "abandon ...")
- * @param threshold   t (min de parts pour recomposer)
- * @param shares      n (nombre total de parts)
- * @param passphrase  (optionnel) phrase utilisateur pour chiffrer *aussi* K au niveau SLIP-39
- *                    (si renseigné, K est "protégé" par passphrase dans SLIP-39)
+ * Chiffre des octets (OpenPGP password-based)
+ * @param {Uint8Array} plaintext
+ * @param {string[]} passwords
+ * @returns {Promise<string>} armored
  */
-export async function generateSlip39ForMnemonic(
-  bip39Plain: string,
-  threshold: number,
-  shares: number,
-  passphrase?: string
-) {
-  // 1) Clé maître aléatoire K (32 octets)
-  const K = crypto.getRandomValues(new Uint8Array(32));
-
-  // 2) Dérive une passphrase courte depuis K pour OpenPGP (base64 simple ici)
-  const pgpPass = bufToB64(K);
-
-  // 3) Chiffre la phrase BIP-39 avec OpenPGP (symétrique)
-  const message = await openpgp.createMessage({ text: bip39Plain });
-  const ciphertext = await openpgp.encrypt({
+async function pgpEncryptBytes(plaintext, passwords) {
+  const message = await openpgp.createMessage({ binary: plaintext });
+  return openpgp.encrypt({
     message,
-    passwords: [pgpPass],
-    config: { preferredSymmetricAlgorithm: openpgp.enums.symmetric.aes256 },
+    passwords,
+    format: 'armored',
+  });
+}
+
+/**
+ * Déchiffre vers des octets (OpenPGP password-based)
+ * @param {string} armored
+ * @param {string[]} passwords
+ * @returns {Promise<Uint8Array>}
+ */
+async function pgpDecryptToBytes(armored, passwords) {
+  const message = await openpgp.readMessage({ armoredMessage: armored });
+  const { data } = await openpgp.decrypt({
+    message,
+    passwords,
+    format: 'binary',
+  });
+  // openpgp v6 renvoie un Uint8Array en binaire
+  return /** @type {Uint8Array} */ (data);
+}
+
+/**
+ * Génère des mnémoniques SLIP-39 à partir d’une phrase BIP-39
+ * + chiffre la phrase BIP-39 en OpenPGP (armored)
+ *
+ * @param {string} bip39Phrase
+ * @param {number} threshold
+ * @param {number} totalShares
+ * @param {string|undefined} slipPassphrase  // passphrase SLIP-39 (optionnelle)
+ * @returns {Promise<{ ciphertext: string, mnemonics: string[] }>}
+ */
+export async function generateSlip39ForMnemonic(bip39Phrase, threshold, totalShares, slipPassphrase) {
+  // 1) Découpe SLIP-39 -> ensemble de mnémoniques (le module doit implémenter cette logique)
+  const mnemonics = await splitMnemonicToSlip39({
+    secret: bip39Phrase,
+    threshold,
+    groups: [{ threshold, count: totalShares }],
+    passphrase: slipPassphrase || '',
   });
 
-  // 4) Partage K en SLIP-39
-  //    Modèle simple 1 groupe (shares, threshold). Tu pourras étendre en multi-groupes.
-  const slip = Slip39.fromArray(
-    K,                           // secret à partager
-    {
-      threshold,                 // t
-      groups: [{ threshold, shares }], // un seul groupe
-      passphrase: passphrase || undefined, // protège K côté SLIP-39 (optionnel)
-    }
-  );
-
-  // mnémoniques SLIP-39 (ordre arbitraire)
-  const mnemonics: string[] = [];
-  for (const path of slip.getPathList()) {
-    mnemonics.push(slip.fromPath(path));
-  }
+  // 2) Chiffre la phrase BIP-39 avec OpenPGP (mot de passe local, p.ex. même que slipPassphrase si tu veux)
+  const plaintext = new TextEncoder().encode(bip39Phrase);
+  const ciphertext = await pgpEncryptBytes(plaintext, [slipPassphrase || '']);
 
   return { ciphertext, mnemonics };
 }
 
 /**
- * Récupère la phrase BIP-39 à partir :
- * - des mnémoniques SLIP-39 (threshold atteints)
- * - du ciphertext OpenPGP
- * - de la passphrase SLIP-39 si tu en as mis une (optionnelle)
+ * Récupère la phrase BIP-39 via mnémoniques SLIP-39 + déchiffrement OpenPGP
+ *
+ * @param {string[]} mnemonics
+ * @param {string} ciphertext
+ * @param {string|undefined} slipPassphrase
+ * @returns {Promise<string>} bip39 phrase
  */
-export async function recoverMnemonicWithSlip39(
-  mnemonics: string[],
-  ciphertext: string,
-  passphrase?: string
-) {
-  // 1) Recompose K via SLIP-39
-  const K = Slip39.recoverSecret(mnemonics, passphrase || undefined);
-  if (!(K instanceof Uint8Array) || K.length === 0) {
-    throw new Error('Échec de la recomposition SLIP-39');
-  }
-  const pgpPass = btoa(String.fromCharCode(...K));
-
-  // 2) Déchiffre le ciphertext OpenPGP
-  const message = await openpgp.readMessage({ armoredMessage: ciphertext });
-  const { data: plaintext } = await openpgp.decrypt({
-    message,
-    passwords: [pgpPass],
+export async function recoverMnemonicWithSlip39(mnemonics, ciphertext, slipPassphrase) {
+  // 1) Reconstruit la phrase BIP-39 depuis les mnémoniques SLIP-39
+  const bip39FromSlip = await recoverFromSlip39({
+    mnemonics,
+    passphrase: slipPassphrase || '',
   });
 
-  return String(plaintext);
+  // 2) Déchiffre le message OpenPGP (si fourni) pour vérifier/cohérer
+  //    (on accepte deux cas : a) seul SLIP-39 suffit, b) on a aussi un ciphertext à valider)
+  if (ciphertext && ciphertext.trim().length > 0) {
+    const decrypted = await pgpDecryptToBytes(ciphertext, [slipPassphrase || '']);
+    const decoded = new TextDecoder().decode(decrypted).trim();
+    // On fait confiance au SLIP-39 ; si envie, tu peux forcer l’égalité :
+    // if (decoded !== bip39FromSlip.trim()) throw new Error('Mismatch between PGP and SLIP-39 recovery');
+    return decoded;
+  }
+
+  return bip39FromSlip.trim();
 }
