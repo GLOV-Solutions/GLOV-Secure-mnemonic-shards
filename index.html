@@ -79,6 +79,14 @@
 
           <div class="controls">
             <div class="control-group">
+              <label data-i18n="shareFormatLabel">Share format</label>
+              <div class="btn-group" id="shareFormatButtons">
+                <button id="formatBip39" class="active" data-format="bip39">BIP-39 (Shamir)</button>
+                <button id="formatSlip39" data-format="slip39">SLIP-39</button>
+              </div>
+            </div>
+
+            <div class="control-group">
               <label data-i18n="wordCountLabel">Mnemonic Word Count</label>
               <div class="btn-group" id="wordCountButtons">
                 <!-- Removed inline handlers: JS attaches listeners -->

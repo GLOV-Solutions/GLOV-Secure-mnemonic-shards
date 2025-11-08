@@ -11,34 +11,32 @@ import { APP_CONFIG, MNEMONIC_CONFIG, SELECTORS, CSS_CLASSES } from './constants
 import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
 
-// ✅ NEW: SLIP-39 wrapper (encryption via OpenPGP; shares via SLIP-39)
+// ✅ SLIP-39 wrapper (OpenPGP for payload; shares via SLIP-39)
 import {
   generateSlip39ForMnemonic,
   recoverMnemonicWithSlip39,
 } from './crypto/slip39Wrapper.js';
 
 // Polyfill for crypto.randomUUID (older engines or injected contexts)
-// Safe v4 UUID using crypto.getRandomValues; no inline code (CSP-friendly)
 (() => {
   try {
     if (typeof crypto !== 'undefined' && !crypto.randomUUID && crypto.getRandomValues) {
       const bytes = () => {
         const a = new Uint8Array(16);
         crypto.getRandomValues(a);
-        // RFC 4122 version/variant bits
-        a[6] = (a[6] & 0x0f) | 0x40;
-        a[8] = (a[8] & 0x3f) | 0x80;
+        a[6] = (a[6] & 0x0f) | 0x40; // version
+        a[8] = (a[8] & 0x3f) | 0x80; // variant
         return a;
       };
       crypto.randomUUID = () => {
         const b = bytes();
-        const toHex = (n) => n.toString(16).padStart(2, '0');
+        const h = (n) => n.toString(16).padStart(2, '0');
         return (
-          toHex(b[0]) + toHex(b[1]) + toHex(b[2]) + toHex(b[3]) + '-' +
-          toHex(b[4]) + toHex(b[5]) + '-' +
-          toHex(b[6]) + toHex(b[7]) + '-' +
-          toHex(b[8]) + toHex(b[9]) + '-' +
-          toHex(b[10]) + toHex(b[11]) + toHex(b[12]) + toHex(b[13]) + toHex(b[14]) + toHex(b[15])
+          h(b[0]) + h(b[1]) + h(b[2]) + h(b[3]) + '-' +
+          h(b[4]) + h(b[5]) + '-' +
+          h(b[6]) + h(b[7]) + '-' +
+          h(b[8]) + h(b[9]) + '-' +
+          h(b[10]) + h(b[11]) + h(b[12]) + h(b[13]) + h(b[14]) + h(b[15])
         );
       };
     }
@@ -58,22 +56,15 @@ class MnemonicSplitApp {
     this.init();
   }
 
-  /**
-   * Initialize the application
-   */
   init() {
     this.setupEventListeners();
     this.setupLanguageSwitcher();
     this.updateThresholdOptions();
     this.setInitialState();
-    // Initialize encryption listeners (currently a no-op placeholder)
     this.shareManager.initEncryptionListeners();
     i18n.init();
   }
 
-  /**
-   * Wire up DOM event listeners
-   */
   setupEventListeners() {
     // Word count toggles (12 / 24)
     const words12Btn = getElement('#words12');
@@ -89,29 +80,21 @@ class MnemonicSplitApp {
 
     // Generate classic Shamir shares
     const generateBtn = getElement(SELECTORS.GENERATE_BTN);
-    if (generateBtn) {
-      addEvent(generateBtn, 'click', () => this.handleGenerateShares());
-    }
+    if (generateBtn) addEvent(generateBtn, 'click', () => this.handleGenerateShares());
 
-    // ✅ NEW: Generate SLIP-39 (IDs needed in HTML: #generateSlip39Btn, #slip39Passphrase)
+    // ✅ Generate SLIP-39 (IDs needed in HTML: #generateSlip39Btn, #slip39Passphrase)
     const generateSlip39Btn = getElement('#generateSlip39Btn');
-    if (generateSlip39Btn) {
-      addEvent(generateSlip39Btn, 'click', () => this.handleGenerateSlip39());
-    }
+    if (generateSlip39Btn) addEvent(generateSlip39Btn, 'click', () => this.handleGenerateSlip39());
 
     // Recover mnemonic (classic paste/files tab)
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
-    if (recoverBtn) {
-      addEvent(recoverBtn, 'click', () => this.handleRecoverMnemonic());
-    }
+    if (recoverBtn) addEvent(recoverBtn, 'click', () => this.handleRecoverMnemonic());
 
-    // ✅ NEW: Recover via SLIP-39 (IDs: #recoverSlip39Btn, #slip39MnemonicsInput, #slip39Ciphertext, #slip39PassphraseRecover)
+    // ✅ Recover via SLIP-39 (IDs: #recoverSlip39Btn, #slip39MnemonicsInput, #slip39Ciphertext, #slip39PassphraseRecover)
     const recoverSlip39Btn = getElement('#recoverSlip39Btn');
-    if (recoverSlip39Btn) {
-      addEvent(recoverSlip39Btn, 'click', () => this.handleRecoverSlip39());
-    }
+    if (recoverSlip39Btn) addEvent(recoverSlip39Btn, 'click', () => this.handleRecoverSlip39());
 
-    // Recover textarea: validate on input/paste (replaces inline handlers)
+    // Recover textarea live validation
     const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
     if (recoverInput) {
       addEvent(recoverInput, 'input', () => {
@@ -124,7 +107,7 @@ class MnemonicSplitApp {
       });
     }
 
-    // Optional: event delegation for share action buttons to avoid any inline handlers
+    // Delegated share actions
     const sharesList = getElement('#sharesList');
     if (sharesList) {
       addEvent(sharesList, 'click', (e) => {
@@ -145,9 +128,6 @@ class MnemonicSplitApp {
     addEvent(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
   }
 
-  /**
-   * Setup language switcher (EN / FR)
-   */
   setupLanguageSwitcher() {
     const langButtons = document.querySelectorAll('.language-btn');
 
@@ -155,26 +135,20 @@ class MnemonicSplitApp {
       const lang = button.getAttribute('data-lang');
       addEvent(button, 'click', (e) => {
         e.preventDefault();
-        // FIX: support EN and FR (not ZH)
         if (lang === LANGUAGES.EN || lang === LANGUAGES.FR) {
           this.switchLanguage(lang);
         }
       });
     });
 
-    // React to language changes
     i18n.addListener((lang) => {
       this.updateLanguageUI(lang);
       this.updateDynamicContent();
     });
 
-    // Initial UI sync
     this.updateLanguageUI(i18n.getCurrentLanguage());
   }
 
-  /**
-   * Switch the app language
-   */
   switchLanguage(language) {
     i18n.setLanguage(language);
   }
@@ -204,11 +178,11 @@ class MnemonicSplitApp {
 
     totalSharesSelect.innerHTML = '';
     options.forEach((option) => {
-      const optionElement = document.createElement('option');
-      optionElement.value = option.value;
-      optionElement.textContent = i18n.t('sharesOption', parseInt(option.value, 10));
-      if (option.value === currentValue) optionElement.selected = true;
-      totalSharesSelect.appendChild(optionElement);
+      const el = document.createElement('option');
+      el.value = option.value;
+      el.textContent = i18n.t('sharesOption', parseInt(option.value, 10));
+      if (option.value === currentValue) el.selected = true;
+      totalSharesSelect.appendChild(el);
     });
   }
 
@@ -229,14 +203,12 @@ class MnemonicSplitApp {
 
   setInitialState() {
     this.updateWordCountButtons();
-    // Render word inputs for the initial word count
     this.mnemonicInput.renderInputs();
     this.shareManager.hideAllAlerts();
   }
 
   setWordCount(count) {
     if (!MNEMONIC_CONFIG.WORD_COUNTS.includes(count)) return;
-
     this.currentWordCount = count;
     this.mnemonicInput.setWordCount(count);
     this.updateWordCountButtons();
@@ -268,18 +240,14 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Utility: read current BIP-39 from inputs as a single string
-   */
+  /** Read current BIP-39 phrase as a single string */
   getCurrentBip39Phrase() {
     const validation = this.mnemonicInput.validateAllInputs();
     if (!validation.isValid) return { ok: false, validation };
     return { ok: true, phrase: validation.words.join(' ') };
   }
 
-  /**
-   * Generate shard set from the current mnemonic (classic Shamir)
-   */
+  /** Classic Shamir flow */
   async handleGenerateShares() {
     const validation = this.mnemonicInput.validateAllInputs();
     if (!validation.isValid) {
@@ -296,20 +264,12 @@ class MnemonicSplitApp {
     const threshold = parseInt(getElement(SELECTORS.THRESHOLD).value, 10);
 
     const success = await this.shareManager.generateShares(
-      validation.words,
-      totalShares,
-      threshold
+      validation.words, totalShares, threshold
     );
     if (success) this.scrollToResult();
   }
 
-  /**
-   * ✅ NEW: Generate SLIP-39 mnemonics + OpenPGP ciphertext for the current BIP-39
-   * Required HTML IDs:
-   * - #slip39Passphrase (optional)
-   * - #slip39ResultCiphertext (block to display armored message)
-   * - #slip39ResultMnemonics (block to display mnemonics list)
-   */
+  /** ✅ SLIP-39 generation: outputs OpenPGP ciphertext + SLIP-39 mnemonics */
   async handleGenerateSlip39() {
     try {
       const bip39 = this.getCurrentBip39Phrase();
@@ -328,23 +288,16 @@ class MnemonicSplitApp {
       const passEl = getElement('#slip39Passphrase');
       const slipPass = passEl && passEl.value ? passEl.value : undefined;
 
-      // Generate SLIP-39 set
       const { ciphertext, mnemonics } = await generateSlip39ForMnemonic(
-        bip39.phrase,
-        threshold,
-        totalShares,
-        slipPass
+        bip39.phrase, threshold, totalShares, slipPass
       );
 
-      // Render results (minimal UI — safe DOM updates)
       const outCipher = getElement('#slip39ResultCiphertext');
       const outList = getElement('#slip39ResultMnemonics');
 
-      if (outCipher) {
-        outCipher.textContent = ciphertext; // armored OpenPGP
-      }
+      if (outCipher) outCipher.textContent = ciphertext;
       if (outList) {
-        outList.innerHTML = ''; // reset
+        outList.innerHTML = '';
         mnemonics.forEach((m, idx) => {
           const li = document.createElement('li');
           li.textContent = `${idx + 1}. ${m}`;
@@ -355,15 +308,14 @@ class MnemonicSplitApp {
       this.shareManager.showSuccess(i18n.t('success.sharesGenerated'));
       this.scrollToResult();
     } catch (err) {
-      this.shareManager.showError(i18n.t('errors.generateFailed')
-        ? i18n.t('errors.generateFailed', err.message || String(err))
-        : `Failed to generate shares: ${err.message || err}`);
+      this.shareManager.showError(
+        (i18n.t('errors.generateFailed') || 'Failed to generate shares: ') +
+        (err?.message || String(err))
+      );
     }
   }
 
-  /**
-   * Recover mnemonic from provided shards (classic paste/file flow)
-   */
+  /** Classic Shamir recovery (paste/files) */
   async handleRecoverMnemonic() {
     try {
       const shares = this.recoveryTabManager.getCurrentShares();
@@ -393,14 +345,7 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * ✅ NEW: Recover via SLIP-39 mnemonics + OpenPGP ciphertext
-   * Required HTML IDs:
-   * - #slip39MnemonicsInput (textarea: one mnemonic per line)
-   * - #slip39Ciphertext (textarea/input with armored OpenPGP)
-   * - #slip39PassphraseRecover (optional passphrase used at SLIP-39 level)
-   * Renders the recovered BIP-39 into existing #recoverResult area.
-   */
+  /** ✅ SLIP-39 recovery (mnemonics + OpenPGP ciphertext) */
   async handleRecoverSlip39() {
     const btn = getElement('#recoverSlip39Btn');
     try {
@@ -413,10 +358,7 @@ class MnemonicSplitApp {
         return;
       }
 
-      const mnemonics = mnemsEl.value
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
+      const mnemonics = mnemsEl.value.split('\n').map((l) => l.trim()).filter(Boolean);
       if (mnemonics.length === 0) {
         this.shareManager.showError(i18n.t('errors.noValidShares'));
         return;
@@ -428,14 +370,10 @@ class MnemonicSplitApp {
       }
       const pass = passEl && passEl.value ? passEl.value : undefined;
 
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = i18n.t('info.recovering');
-      }
+      if (btn) { btn.disabled = true; btn.textContent = i18n.t('info.recovering'); }
 
       const bip39 = await recoverMnemonicWithSlip39(mnemonics, ciphertext, pass);
 
-      // Render into existing recover result panel
       const recDiv = getElement(SELECTORS.RECOVER_RESULT);
       if (recDiv) {
         recDiv.innerHTML = '';
@@ -450,14 +388,11 @@ class MnemonicSplitApp {
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = i18n.t('recoverBtn'); // reuse the label
+        btn.textContent = i18n.t('recoverBtn');
       }
     }
   }
 
-  /**
-   * Focus the first invalid word input
-   */
   focusInvalidInput(index) {
     const input = getElement(SELECTORS.WORD_INPUT(index));
     if (input) {
@@ -467,20 +402,15 @@ class MnemonicSplitApp {
   }
 
   scrollToResult() {
-    const resultDiv =
-      getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
+    const resultDiv = getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
     if (resultDiv) resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   handleKeyboardShortcuts(e) {
-    // Ctrl/Cmd + Enter: generate or recover
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
-
-      const recoverSection = getElement('.recover-section');
       const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
       const isActiveInRecover = recoverInput && document.activeElement === recoverInput;
-
       const recoverBtnEl = getElement(SELECTORS.RECOVER_BTN);
       if (isActiveInRecover && recoverBtnEl && !recoverBtnEl.disabled) {
         this.handleRecoverMnemonic();
@@ -488,11 +418,7 @@ class MnemonicSplitApp {
         this.handleGenerateShares();
       }
     }
-
-    // ESC: clear all alerts
-    if (e.key === 'Escape') {
-      this.shareManager.hideAllAlerts();
-    }
+    if (e.key === 'Escape') this.shareManager.hideAllAlerts();
   }
 
   getAppInfo() {
@@ -515,53 +441,39 @@ class MnemonicSplitApp {
 let app;
 
 function initApp() {
-  try {
-    app = new MnemonicSplitApp();
-  } catch (error) {
-    // Swallow initialization errors to avoid breaking UI
-  }
+  try { app = new MnemonicSplitApp(); } catch (_) {}
 }
 
 function bindGlobalFunctions() {
   window.setWordCount = (count) => app && app.setWordCount(count);
   window.generateShares = () => app && app.handleGenerateShares();
   window.copyShare = (button, shareContent) => app && app.shareManager.copyShare(button, shareContent);
-  window.downloadShare = (shareContent, shareIndex) =>
-    app && app.shareManager.downloadShare(shareContent, shareIndex);
+  window.downloadShare = (shareContent, shareIndex) => app && app.shareManager.downloadShare(shareContent, shareIndex);
   window.recoverMnemonic = () => app && app.handleRecoverMnemonic();
   window.validateShares = () => app && app.recoveryTabManager && app.recoveryTabManager.validateCurrentTab();
 
-  // ✅ Provide SLIP-39 functions too (if you want to trigger them externally)
+  // ✅ expose SLIP-39 helpers if you need them globally
   window.generateSlip39 = () => app && app.handleGenerateSlip39();
   window.recoverSlip39 = () => app && app.handleRecoverSlip39();
 }
 
-// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   bindGlobalFunctions();
 });
 
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-  if (app) app.destroy();
-});
+window.addEventListener('beforeunload', () => { if (app) app.destroy(); });
 
-// Export class for debugging
 if (typeof window !== 'undefined') {
   window.MnemonicSplitApp = MnemonicSplitApp;
   window.app = app;
 }
 
-// Register the service worker on window load (if supported)
+// Register service worker
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const base =
-      (typeof import.meta !== 'undefined' &&
-       import.meta.env &&
-       import.meta.env.BASE_URL)
-        ? import.meta.env.BASE_URL
-        : '/';
+    const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
+      ? import.meta.env.BASE_URL : '/';
     const swUrl = base.replace(/\/$/, '') + '/sw.js';
     navigator.serviceWorker.register(swUrl).catch(() => {});
   });
