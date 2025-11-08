@@ -331,10 +331,8 @@ class MnemonicSplitApp {
       this.shareManager.showSuccess(i18n.t('success.sharesGenerated'));
       this.scrollToResult();
     } catch (err) {
-      this.shareManager.showError(
-        (i18n.t('errors.generateFailed') || 'Failed to generate shares: ') +
-        (err?.message || String(err))
-      );
+      const base = i18n.t('errors.generateFailed'); // simple string, sans placeholders
+      this.shareManager.showError(`${base}: ${err?.message || String(err)}`);
     }
   }
 
@@ -359,7 +357,7 @@ class MnemonicSplitApp {
       const success = await this.shareManager.recoverMnemonicWithShares(shares, encryptionPassword);
       if (success) this.scrollToResult();
     } catch (error) {
-      this.shareManager.showError(i18n.t('errors.recoveryFailed') + error.message);
+      this.shareManager.showError(`${i18n.t('errors.recoveryFailed')}: ${error?.message || String(error)}`);
     } finally {
       const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
       if (recoverBtn) {

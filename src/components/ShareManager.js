@@ -172,7 +172,7 @@ export class ShareManager {
       this.showSuccess(SUCCESS_MESSAGES.SHARES_GENERATED);
       return true;
     } catch (error) {
-      this.showError(ERROR_MESSAGES.GENERATE_FAILED(error.message));
+      this.showError(`${t('errors.generateFailed')}: ${error?.message || String(error)}`);
       return false;
     }
   }
