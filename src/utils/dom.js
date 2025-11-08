@@ -1,11 +1,11 @@
 /**
- * DOM 操作工具函数
+ * DOM utility functions
  */
 
 /**
- * 安全获取DOM元素
- * @param {string} selector - CSS选择器
- * @returns {Element|null} DOM元素或null
+ * Safely get a DOM element
+ * @param {string} selector - CSS selector
+ * @returns {Element|null} The DOM element or null
  */
 export function getElement(selector) {
   try {
@@ -16,9 +16,9 @@ export function getElement(selector) {
 }
 
 /**
- * 安全获取多个DOM元素
- * @param {string} selector - CSS选择器
- * @returns {NodeList} DOM元素列表
+ * Safely get multiple DOM elements
+ * @param {string} selector - CSS selector
+ * @returns {NodeList} List of DOM elements
  */
 export function getElements(selector) {
   try {
@@ -29,11 +29,11 @@ export function getElements(selector) {
 }
 
 /**
- * 创建DOM元素
- * @param {string} tagName - 标签名
- * @param {string[]} [classNames] - 类名数组
- * @param {Object} [attributes] - 属性对象
- * @returns {Element} 创建的DOM元素
+ * Create a DOM element
+ * @param {string} tagName - Tag name
+ * @param {string[]} [classNames] - Array of class names
+ * @param {Object} [attributes] - Attributes object
+ * @returns {Element} The created DOM element
  */
 export function createElement(tagName, classNames = [], attributes = {}) {
   const element = document.createElement(tagName);
@@ -50,9 +50,9 @@ export function createElement(tagName, classNames = [], attributes = {}) {
 }
 
 /**
- * 显示/隐藏元素
- * @param {Element|string} element - DOM元素或选择器
- * @param {boolean} show - 是否显示
+ * Show or hide an element
+ * @param {Element|string} element - DOM element or selector
+ * @param {boolean} show - Whether to show the element
  */
 export function toggleElement(element, show) {
   const el = typeof element === 'string' ? getElement(element) : element;
@@ -62,10 +62,10 @@ export function toggleElement(element, show) {
 }
 
 /**
- * 添加/移除CSS类
- * @param {Element|string} element - DOM元素或选择器
- * @param {string} className - 类名
- * @param {boolean} add - 是否添加类
+ * Add or remove a CSS class
+ * @param {Element|string} element - DOM element or selector
+ * @param {string} className - Class name
+ * @param {boolean} add - Whether to add the class
  */
 export function toggleClass(element, className, add) {
   const el = typeof element === 'string' ? getElement(element) : element;
@@ -75,9 +75,9 @@ export function toggleClass(element, className, add) {
 }
 
 /**
- * 设置元素内容
- * @param {Element|string} element - DOM元素或选择器
- * @param {string} content - HTML内容
+ * Set element inner HTML content
+ * @param {Element|string} element - DOM element or selector
+ * @param {string} content - HTML content
  */
 export function setHTML(element, content) {
   const el = typeof element === 'string' ? getElement(element) : element;
@@ -87,9 +87,9 @@ export function setHTML(element, content) {
 }
 
 /**
- * 设置元素文本内容
- * @param {Element|string} element - DOM元素或选择器
- * @param {string} text - 文本内容
+ * Set element text content
+ * @param {Element|string} element - DOM element or selector
+ * @param {string} text - Text content
  */
 export function setText(element, text) {
   const el = typeof element === 'string' ? getElement(element) : element;
@@ -99,19 +99,19 @@ export function setText(element, text) {
 }
 
 /**
- * 清空元素内容
- * @param {Element|string} element - DOM元素或选择器
+ * Clear element content
+ * @param {Element|string} element - DOM element or selector
  */
 export function clearElement(element) {
   setHTML(element, '');
 }
 
 /**
- * 为元素添加事件监听器
- * @param {Element|string} element - DOM元素或选择器
- * @param {string} event - 事件名
- * @param {Function} handler - 事件处理函数
- * @param {Object} [options] - 事件选项
+ * Add an event listener to an element
+ * @param {Element|string} element - DOM element or selector
+ * @param {string} event - Event name
+ * @param {Function} handler - Event handler function
+ * @param {Object} [options] - Event options
  */
 export function addEvent(element, event, handler, options = {}) {
   const el = typeof element === 'string' ? getElement(element) : element;
@@ -121,10 +121,10 @@ export function addEvent(element, event, handler, options = {}) {
 }
 
 /**
- * 为元素移除事件监听器
- * @param {Element|string} element - DOM元素或选择器
- * @param {string} event - 事件名
- * @param {Function} handler - 事件处理函数
+ * Remove an event listener from an element
+ * @param {Element|string} element - DOM element or selector
+ * @param {string} event - Event name
+ * @param {Function} handler - Event handler function
  */
 export function removeEvent(element, event, handler) {
   const el = typeof element === 'string' ? getElement(element) : element;

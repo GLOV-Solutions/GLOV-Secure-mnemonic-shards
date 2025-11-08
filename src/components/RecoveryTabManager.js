@@ -1,6 +1,6 @@
 /**
- * 恢复Tab管理器
- * 负责处理tab切换、文件上传和分片解析功能
+ * Recovery Tab Manager
+ * Handles tab switching, file uploads, and share parsing for recovery
  */
 
 import { getElement, createElement, toggleElement, toggleClass, setHTML, clearElement, addEvent } from '../utils/dom.js';
@@ -18,16 +18,16 @@ export class RecoveryTabManager {
     this.encryptionPassword = '';
     this.currentThreshold = 0;
     this.validShareCount = 0;
-    this.pendingFiles = []; // 待处理的文件
-    this.hasEncryptedFiles = false; // 是否有加密文件
-    this.uploadPassword = ''; // 上传文件时的解密密码
-    this.passwordVisible = false; // 密码是否可见
+    this.pendingFiles = []; // files waiting to be processed
+    this.hasEncryptedFiles = false; // whether there are encrypted files
+    this.uploadPassword = ''; // decryption password for uploaded files
+    this.passwordVisible = false; // whether password field is visible
 
     this.init();
   }
 
   /**
-   * 初始化
+   * Initialize module
    */
   init() {
     this.setupTabSwitching();
@@ -37,7 +37,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 设置Tab切换
+   * Set up tab switching
    */
   setupTabSwitching() {
     const pasteTabBtn = getElement('#pasteTabBtn');
@@ -47,14 +47,14 @@ export class RecoveryTabManager {
 
     if (!pasteTabBtn || !uploadTabBtn || !pasteTab || !uploadTab) return;
 
-    // Tab按钮点击事件
+    // Tab button handlers
     addEvent(pasteTabBtn, 'click', () => this.switchTab('paste'));
     addEvent(uploadTabBtn, 'click', () => this.switchTab('upload'));
   }
 
   /**
-   * 切换Tab
-   * @param {string} tabType - Tab类型
+   * Switch tab
+   * @param {string} tabType - 'paste' | 'upload'
    */
   switchTab(tabType) {
     if (this.activeTab === tabType) return;
@@ -64,35 +64,31 @@ export class RecoveryTabManager {
     const pasteTab = getElement('#pasteTab');
     const uploadTab = getElement('#uploadTab');
 
-    // 更新按钮状态
+    // Update button state
     toggleClass(pasteTabBtn, 'active', tabType === 'paste');
     toggleClass(uploadTabBtn, 'active', tabType === 'upload');
 
-    // 更新内容显示
+    // Update content visibility
     toggleClass(pasteTab, 'active', tabType === 'paste');
     toggleClass(uploadTab, 'active', tabType === 'upload');
 
-    // 清空上一个tab的结果显示
+    // Clear previous tab result area
     if (this.activeTab === 'paste') {
       const pasteResultDiv = getElement('#pasteRecoverResult');
-      if (pasteResultDiv) {
-        setHTML(pasteResultDiv, '');
-      }
+      if (pasteResultDiv) setHTML(pasteResultDiv, '');
     } else if (this.activeTab === 'upload') {
       const uploadResultDiv = getElement('#uploadRecoverResult');
-      if (uploadResultDiv) {
-        setHTML(uploadResultDiv, '');
-      }
+      if (uploadResultDiv) setHTML(uploadResultDiv, '');
     }
 
     this.activeTab = tabType;
 
-    // 切换Tab后重新验证状态
+    // Re-validate after switching
     this.validateCurrentTab();
   }
 
   /**
-   * 设置文件上传
+   * Set up file upload buttons/inputs
    */
   setupFileUpload() {
     const selectFilesBtn = getElement('#selectFilesBtn');
@@ -101,32 +97,28 @@ export class RecoveryTabManager {
 
     if (!selectFilesBtn || !fileInput) return;
 
-    // 点击选择文件按钮
-    addEvent(selectFilesBtn, 'click', () => {
-      fileInput.click();
-    });
+    // Open file selector
+    addEvent(selectFilesBtn, 'click', () => fileInput.click());
 
-    // 文件选择事件
+    // On file chosen
     addEvent(fileInput, 'change', (e) => {
       this.handleFileSelect(e.target.files);
     });
 
-    // 清空文件按钮
+    // Clear files
     if (clearFilesBtn) {
-      addEvent(clearFilesBtn, 'click', () => {
-        this.clearAllFiles();
-      });
+      addEvent(clearFilesBtn, 'click', () => this.clearAllFiles());
     }
   }
 
   /**
-   * 设置拖拽上传
+   * Set up drag-and-drop upload
    */
   setupDragAndDrop() {
     const uploadArea = getElement('#uploadArea');
     if (!uploadArea) return;
 
-    // 防止默认拖拽行为
+    // Prevent default browser behavior
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
       addEvent(uploadArea, eventName, (e) => {
         e.preventDefault();
@@ -134,19 +126,19 @@ export class RecoveryTabManager {
       });
     });
 
-    // 拖拽进入
+    // Visual feedback on drag over
     ['dragenter', 'dragover'].forEach((eventName) => {
       addEvent(uploadArea, eventName, () => {
         toggleClass(uploadArea, 'drag-over', true);
       });
     });
 
-    // 拖拽离开
+    // Remove feedback when leaving
     addEvent(uploadArea, 'dragleave', () => {
       toggleClass(uploadArea, 'drag-over', false);
     });
 
-    // 文件放下
+    // Handle drop
     addEvent(uploadArea, 'drop', (e) => {
       toggleClass(uploadArea, 'drag-over', false);
       this.handleFileSelect(e.dataTransfer.files);
@@ -154,57 +146,53 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 处理文件选择
-   * @param {FileList} files - 文件列表
+   * Handle selected/dropped files
+   * @param {FileList} files
    */
   async handleFileSelect(files) {
     if (!files || files.length === 0) return;
 
-    // 验证文件类型和大小
+    // Validate file types and sizes
     const validFiles = this.validateFiles(files);
     if (validFiles.length === 0) return;
 
-    // 检查是否有加密文件
+    // Check if any are encrypted
     this.hasEncryptedFiles = validFiles.some((file) => file.name.endsWith('.gpg'));
 
-    // 直接处理文件
+    // Process files
     await this.processFiles(validFiles);
 
-    // 如果有加密文件，显示密码输入区域
+    // If encrypted files exist, reveal password section
     if (this.hasEncryptedFiles) {
       this.togglePasswordSection(true, true);
     }
   }
 
   /**
-   * 处理文件列表
-   * @param {Array} files - 文件列表
+   * Process list of files
+   * @param {Array<File>} files
    */
   async processFiles(files) {
-    // 处理每个文件
     for (const file of files) {
       await this.processFile(file);
     }
 
-    // 更新UI
+    // Update UI and validate current state
     this.updateFilesList();
-
-    // 即使没有加密文件，也要验证当前状态
     this.validateCurrentShares();
   }
 
   /**
-   * 验证文件
-   * @param {FileList} files - 文件列表
-   * @returns {Array} 有效文件列表
+   * Validate files (type/size/duplication)
+   * @param {FileList} files
+   * @returns {Array<File>}
    */
   validateFiles(files) {
     const validFiles = [];
     const maxSize = 5 * 1024 * 1024; // 5MB
+    const validExtensions = ['.txt', '.gpg'];
 
     for (const file of files) {
-      // 检查文件类型
-      const validExtensions = ['.txt', '.gpg'];
       const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
 
       if (!validExtensions.includes(fileExtension)) {
@@ -212,13 +200,11 @@ export class RecoveryTabManager {
         continue;
       }
 
-      // 检查文件大小
       if (file.size > maxSize) {
         this.showError(t('errors.fileTooLarge', file.name));
         continue;
       }
 
-      // 检查重复文件
       if (this.uploadedFiles.some((f) => f.name === file.name)) {
         this.showError(t('errors.duplicateFile', file.name));
         continue;
@@ -231,12 +217,12 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 处理单个文件
-   * @param {File} file - 文件对象
+   * Process a single file
+   * @param {File} file
    */
   async processFile(file) {
     try {
-      // 添加到上传列表
+      // Add to uploads list
       const fileData = {
         name: file.name,
         size: file.size,
@@ -246,28 +232,28 @@ export class RecoveryTabManager {
         shareData: null,
         isEncrypted: file.name.endsWith('.gpg'),
         decryptedContent: null,
-        contentFormat: 'text', // 'text' 或 'binary'
+        contentFormat: 'text', // 'text' or 'binary'
       };
 
       this.uploadedFiles.push(fileData);
 
-      // 读取文件内容
+      // Read content
       const content = await this.readFileContent(file);
       fileData.content = content;
 
-      // 检测内容格式
+      // Detect content format
       if (fileData.isEncrypted) {
         fileData.contentFormat = (content instanceof ArrayBuffer) ? 'binary' : 'text';
         fileData.status = 'encrypted';
       } else {
-        // 非加密文件必须是文本格式
+        // Non-encrypted files must be text
         if (typeof content !== 'string') {
           fileData.status = 'invalid';
           return;
         }
         fileData.contentFormat = 'text';
 
-        // 解析分片内容
+        // Parse share content
         const shareData = this.parseShareContent(content);
         if (shareData && !shareData.encrypted) {
           fileData.shareData = shareData;
@@ -285,18 +271,18 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 从对话框获取密码
-   * @param {boolean} isRetry - 是否是重试
-   * @returns {Promise<string>} 密码
+   * Get password from dialog
+   * @param {boolean} isRetry
+   * @returns {Promise<string>}
    */
   async getPasswordFromDialog(isRetry = false) {
     return await passwordDialog.show(isRetry);
   }
 
   /**
-   * 重试解密
-   * @param {Array} encryptedFiles - 加密文件列表
-   * @param {string} password - 密码
+   * Retry decryption for encrypted files with supplied password
+   * @param {Array<Object>} encryptedFiles
+   * @param {string} password
    */
   async retryDecryption(encryptedFiles, password) {
     let decryptionSuccess = false;
@@ -306,7 +292,7 @@ export class RecoveryTabManager {
         const decryptedContent = await decryptWithPassword(file.content, password);
         file.decryptedContent = decryptedContent;
 
-        // 解析解密后的分片内容
+        // Parse decrypted share
         const shareData = this.parseShareContent(decryptedContent);
         if (shareData && !shareData.encrypted) {
           file.shareData = shareData;
@@ -317,31 +303,31 @@ export class RecoveryTabManager {
         }
       } catch (error) {
         file.status = 'invalid';
-        // 提供更详细的错误信息
-        if (error.message.includes('密码错误')) {
-          // 密码错误，继续尝试其他文件
-        } else if (error.message.includes('格式无效')) {
-          // 格式错误，标记为无效但继续尝试其他文件
-          console.warn(`文件 ${file.name} 格式无效:`, error.message);
+        // More explicit error handling in English
+        if (/invalid password|wrong password/i.test(error.message)) {
+          // Wrong password; continue with other files
+        } else if (/invalid format|malformed/i.test(error.message)) {
+          // Format error; mark invalid but continue
+          console.warn(`File ${file.name} has invalid format:`, error.message);
         } else {
-          // 其他错误
-          console.warn(`文件 ${file.name} 解密失败:`, error.message);
+          // Other errors
+          console.warn(`File ${file.name} decryption failed:`, error.message);
         }
       }
 
-      // 每解密一个文件就更新UI和验证状态
+      // Update UI and validation after each file
       this.updateFilesList();
       this.validateCurrentShares();
     }
 
-    // 如果重试仍然失败，显示错误信息
+    // If all failed, show a clear error message
     if (!decryptionSuccess) {
-      this.showError(t('encryption.invalidPassword') || '密码错误或文件格式无效');
+      this.showError(t('encryption.invalidPassword') || 'Invalid password or unsupported file format.');
     }
   }
 
   /**
-   * 验证当前分片状态
+   * Validate current share state (uploaded files)
    */
   validateCurrentShares() {
     const statusDiv = getElement('#uploadStatus');
@@ -349,10 +335,12 @@ export class RecoveryTabManager {
 
     if (!statusDiv || !recoverBtn) return;
 
-    // 收集所有有效分片
-    const allShares = this.uploadedFiles.filter((file) => file.status === 'valid' && file.shareData).map((file) => file.shareData);
+    // Collect valid shares
+    const allShares = this.uploadedFiles
+      .filter((file) => file.status === 'valid' && file.shareData)
+      .map((file) => file.shareData);
 
-    // 检查是否有待解密的文件
+    // Check for files pending decryption
     const encryptedFiles = this.uploadedFiles.filter((file) => file.status === 'encrypted');
 
     if (allShares.length === 0 && encryptedFiles.length === 0) {
@@ -363,11 +351,12 @@ export class RecoveryTabManager {
 
     if (allShares.length === 0 && encryptedFiles.length > 0) {
       this.updateStatus('waiting', t('encryption.passwordRequired'), statusDiv);
-      recoverBtn.disabled = false; // 允许用户点击恢复按钮，然后在恢复时弹出密码输入框
+      // Allow pressing Recover to trigger password dialog later
+      recoverBtn.disabled = false;
       return;
     }
 
-    // 验证分片集合
+    // Validate combined shares
     const validation = validateShareCollection(allShares);
 
     if (validation.isValid) {
@@ -386,16 +375,15 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 读取文件内容（支持GPG文件的智能格式检测）
-   * @param {File} file - 文件对象
-   * @returns {Promise<string|ArrayBuffer>} 文件内容
+   * Read file content with smart GPG handling
+   * @param {File} file
+   * @returns {Promise<string|ArrayBuffer>}
    */
   async readFileContent(file) {
-    // 对于GPG文件，我们需要更谨慎的处理
     if (file.name.endsWith('.gpg')) {
       return this.readGpgFile(file);
     } else {
-      // 非GPG文件，简单读取为文本
+      // Plain text
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
@@ -406,59 +394,58 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 读取GPG文件，智能检测格式
-   * @param {File} file - GPG文件对象
-   * @returns {Promise<string|ArrayBuffer>} 文件内容
+   * Read GPG file and detect format (binary vs ASCII armor)
+   * @param {File} file
+   * @returns {Promise<string|ArrayBuffer>}
    */
   async readGpgFile(file) {
-    // 首先尝试读取为ArrayBuffer（二进制格式）
+    // Try ArrayBuffer first
     try {
       const binaryResult = await this.readAsArrayBuffer(file);
       const format = detectGpgFormat(binaryResult);
 
-      // 如果检测到是二进制PGP格式，直接返回
+      // Binary packets -> return as-is
       if (format.type === 'binary-packet' || format.type === 'binary') {
         return binaryResult;
       }
 
-      // 如果包含ASCII装甲头部，转换为文本
+      // ASCII armor -> convert to text
       if (format.type === 'ascii-armor') {
         try {
           const textContent = new TextDecoder('utf-8', { fatal: false }).decode(binaryResult);
           return textContent;
-        } catch (decodeError) {
-          // 如果解码失败，返回二进制格式
+        } catch (_decodeError) {
+          // Fallback to binary if decoding fails
           return binaryResult;
         }
       }
 
-      // 如果不确定，也尝试读取为文本格式
+      // Unclear: try reading as text too
       const textResult = await this.readAsText(file);
       const trimmed = textResult.trim();
 
-      // 如果包含PGP装甲标记，返回文本
       if (trimmed.startsWith('-----BEGIN PGP MESSAGE-----')) {
         return textResult;
       }
 
-      // 如果文本很短或包含控制字符，很可能是二进制被误读
+      // Very short or contains control chars -> likely binary misread
       if (trimmed.length < 200 || /[\x00-\x08\x0E-\x1F\x7F]/.test(trimmed)) {
         return binaryResult;
       }
 
-      // 默认返回文本（假设是ASCII装甲格式）
+      // Default to text (assume ASCII armor)
       return textResult;
     } catch (error) {
-      // 如果二进制读取失败，回退到文本读取
-      console.warn('二进制读取失败，回退到文本模式:', error);
+      // If binary read fails, fallback to text
+      console.warn('Binary read failed, falling back to text mode:', error);
       return this.readAsText(file);
     }
   }
 
   /**
-   * 读取文件为ArrayBuffer
-   * @param {File} file - 文件对象
-   * @returns {Promise<ArrayBuffer>} ArrayBuffer数据
+   * Read file as ArrayBuffer
+   * @param {File} file
+   * @returns {Promise<ArrayBuffer>}
    */
   readAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
@@ -470,9 +457,9 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 读取文件为文本
-   * @param {File} file - 文件对象
-   * @returns {Promise<string>} 文本数据
+   * Read file as UTF-8 text
+   * @param {File} file
+   * @returns {Promise<string>}
    */
   readAsText(file) {
     return new Promise((resolve, reject) => {
@@ -484,30 +471,31 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 解析分片内容
-   * @param {string} content - 文件内容
-   * @returns {Object|null} 分片数据
+   * Parse share file content
+   * @param {string} content
+   * @returns {Object|null} shareData or { encrypted: true, content }
    */
   parseShareContent(content) {
     try {
-      // 首先尝试直接解析整个内容（适用于单行分片）
+      // Try single-line share first
       try {
         const trimmedContent = content.trim();
-        // 检查是否是GPG格式（以-----BEGIN PGP MESSAGE-----开头）
+
+        // GPG ASCII armor?
         if (trimmedContent.startsWith('-----BEGIN PGP MESSAGE-----')) {
           return { encrypted: true, content: trimmedContent };
         }
 
-        // 尝试解析为标准分片
+        // Standard encoded share?
         const shareData = JSON.parse(atob(trimmedContent));
         if (shareData.threshold && shareData.index !== undefined && shareData.data) {
           return shareData;
         }
       } catch (e) {
-        // 继续尝试多行解析
+        // Continue to multi-line attempt
       }
 
-      // 尝试解析多行内容
+      // Try multi-line parsing (one share per line)
       const lines = content
         .split('\n')
         .map((line) => line.trim())
@@ -515,7 +503,6 @@ export class RecoveryTabManager {
 
       for (const line of lines) {
         try {
-          // 检查是否是GPG格式
           if (line.startsWith('-----BEGIN PGP MESSAGE-----')) {
             return { encrypted: true, content: line };
           }
@@ -525,20 +512,20 @@ export class RecoveryTabManager {
             return shareData;
           }
         } catch (e) {
-          // 继续尝试下一行
+          // Keep trying next line
         }
       }
 
-      // 如果所有解析都失败，可能是加密分片或其他格式，返回原始内容
+      // Fallback: treat as encrypted/unknown, return raw content
       return { encrypted: true, content: content.trim() };
-    } catch (error) {
-      // 即使解析失败，也返回原始内容，让后续处理决定
+    } catch (_error) {
+      // Still return something that upstream can handle
       return { encrypted: true, content: content.trim() };
     }
   }
 
   /**
-   * 更新文件列表UI
+   * Update uploaded files list UI
    */
   updateFilesList() {
     const uploadedFiles = getElement('#uploadedFiles');
@@ -561,10 +548,10 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 创建文件项
-   * @param {Object} file - 文件数据
-   * @param {number} index - 文件索引
-   * @returns {Element} 文件项元素
+   * Build single file item row
+   * @param {Object} file
+   * @param {number} index
+   * @returns {Element}
    */
   createFileItem(file, index) {
     const fileItem = createElement('div', ['file-item']);
@@ -599,9 +586,9 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 获取文件状态文本
-   * @param {string} status - 状态
-   * @returns {string} 状态文本
+   * Human-readable file status text
+   * @param {string} status
+   * @returns {string}
    */
   getFileStatusText(status) {
     const statusTexts = t('fileStatus');
@@ -609,7 +596,7 @@ export class RecoveryTabManager {
       return statusTexts[status] || statusTexts.unknown;
     }
 
-    // 回退到英文
+    // Fallback to English
     switch (status) {
       case 'processing':
         return 'Processing...';
@@ -618,15 +605,15 @@ export class RecoveryTabManager {
       case 'invalid':
         return 'Invalid format';
       case 'encrypted':
-        return 'Encrypted - awaiting decryption';
+        return 'Encrypted — awaiting decryption';
       default:
         return 'Unknown status';
     }
   }
 
   /**
-   * 移除文件
-   * @param {number} index - 文件索引
+   * Remove file from list
+   * @param {number} index
    */
   removeFile(index) {
     this.uploadedFiles.splice(index, 1);
@@ -635,7 +622,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 清空所有文件
+   * Clear all uploaded files
    */
   clearAllFiles() {
     this.uploadedFiles = [];
@@ -644,12 +631,12 @@ export class RecoveryTabManager {
     this.updateFilesList();
     this.validateCurrentTab();
 
-    // 隐藏密码输入区域
+    // Hide password section
     this.togglePasswordSection(false);
   }
 
   /**
-   * 验证当前Tab
+   * Validate active tab
    */
   validateCurrentTab() {
     if (this.activeTab === 'paste') {
@@ -660,7 +647,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 验证粘贴输入
+   * Validate pasted input area
    */
   validatePasteInput() {
     const input = getElement('#recoverInput');
@@ -693,7 +680,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 验证文件上传
+   * Validate uploaded files tab
    */
   validateFileUpload() {
     const statusDiv = getElement('#uploadStatus');
@@ -707,21 +694,21 @@ export class RecoveryTabManager {
       return;
     }
 
-    // 使用统一的验证方法
+    // Unified validation path
     this.validateCurrentShares();
   }
 
   /**
-   * 处理验证结果
-   * @param {Object} validation - 验证结果
-   * @param {Element} statusDiv - 状态显示元素
-   * @param {Element} recoverBtn - 恢复按钮
+   * Process validation result
+   * @param {Object} validation
+   * @param {Element} statusDiv
+   * @param {Element} recoverBtn
    */
   processValidationResult(validation, statusDiv, recoverBtn) {
     if (!validation.isValid) {
       if (validation.validCount === 0) {
         this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
-      } else if (validation.errors && validation.errors.some((error) => error.includes('检测到重复的分片索引'))) {
+      } else if (validation.errors && validation.errors.some((error) => /duplicate/i.test(error))) {
         this.updateStatus('invalid', t('errors.duplicateShares'), statusDiv);
       } else {
         this.updateStatus('insufficient', t('errors.insufficientShares', validation.threshold, validation.validCount), statusDiv);
@@ -736,22 +723,22 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 更新状态显示
-   * @param {string} status - 状态类型
-   * @param {string} message - 状态消息
-   * @param {Element} statusDiv - 状态显示元素
+   * Update a status area with class + message
+   * @param {string} status - 'waiting' | 'valid' | 'invalid' | 'insufficient'
+   * @param {string} message
+   * @param {Element} statusDiv
    */
   updateStatus(status, message, statusDiv) {
     if (!statusDiv) return;
 
-    // 移除所有状态类
+    // Remove previous status classes
     statusDiv.className = statusDiv.className.replace(/\b(input|upload)-\w+\b/g, '');
 
-    // 添加新的状态类
+    // Add new status class based on the container type
     const statusClass = statusDiv.id === 'inputStatus' ? `input-${status}` : `upload-${status}`;
     toggleClass(statusDiv, statusClass, true);
 
-    // 设置消息 - 使用安全的DOM操作，防止XSS攻击
+    // Safe DOM update (avoid XSS)
     statusDiv.innerHTML = '';
     const spanElement = document.createElement('span');
     spanElement.className = 'status-text';
@@ -760,8 +747,8 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 获取当前分片数据
-   * @returns {Array} 分片数据数组
+   * Get current shares based on active tab
+   * @returns {Array}
    */
   getCurrentShares() {
     if (this.activeTab === 'paste') {
@@ -776,25 +763,26 @@ export class RecoveryTabManager {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
     } else {
-      // 返回有效的分片数据对象
-      return this.uploadedFiles.filter((file) => file.status === 'valid' && file.shareData).map((file) => file.shareData);
+      // Return valid share objects from uploaded files
+      return this.uploadedFiles
+        .filter((file) => file.status === 'valid' && file.shareData)
+        .map((file) => file.shareData);
     }
   }
 
   /**
-   * 获取加密密码
-   * @returns {string} 加密密码（现在总是返回空字符串，因为使用弹框输入）
+   * Get encryption password (deprecated, now always via dialog)
+   * @returns {string}
    */
   getEncryptionPassword() {
     return '';
   }
 
   /**
-   * 显示错误消息
-   * @param {string} message - 错误消息
+   * Show a temporary error toast
+   * @param {string} message
    */
   showError(message) {
-    // 创建临时错误提示
     const errorAlert = createElement('div', ['alert', 'alert-error']);
     errorAlert.style.position = 'fixed';
     errorAlert.style.top = '20px';
@@ -805,7 +793,6 @@ export class RecoveryTabManager {
 
     document.body.appendChild(errorAlert);
 
-    // 3秒后自动移除
     setTimeout(() => {
       if (errorAlert.parentNode) {
         errorAlert.parentNode.removeChild(errorAlert);
@@ -814,7 +801,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 销毁管理器
+   * Destroy manager state
    */
   destroy() {
     this.uploadedFiles = [];
@@ -828,7 +815,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 设置加密密码输入框
+   * Set up decryption password input area (upload flow)
    */
   setupEncryptionPassword() {
     const passwordInput = getElement('#uploadEncryptionPassword');
@@ -838,28 +825,27 @@ export class RecoveryTabManager {
 
     if (!passwordInput || !passwordToggle || !applyBtn || !skipBtn) return;
 
-    // 密码输入事件
+    // Store password (no complexity checks here)
     addEvent(passwordInput, 'input', () => {
       this.uploadPassword = passwordInput.value;
-      // 移除密码复杂度检验
     });
 
-    // 密码可见性切换
+    // Toggle visibility
     addEvent(passwordToggle, 'click', () => {
       this.togglePasswordVisibility();
     });
 
-    // 应用解密按钮
+    // Apply decryption
     addEvent(applyBtn, 'click', () => {
       this.applyDecryption();
     });
 
-    // 跳过解密按钮
+    // Skip decryption
     addEvent(skipBtn, 'click', () => {
       this.skipDecryption();
     });
 
-    // 回车键应用解密
+    // Enter key to apply
     addEvent(passwordInput, 'keydown', (e) => {
       if (e.key === 'Enter') {
         this.applyDecryption();
@@ -868,7 +854,7 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 切换密码可见性
+   * Toggle password field visibility
    */
   togglePasswordVisibility() {
     const passwordInput = getElement('#uploadEncryptionPassword');
@@ -881,11 +867,10 @@ export class RecoveryTabManager {
     passwordToggle.querySelector('.password-toggle-icon').textContent = this.passwordVisible ? 'Hide' : 'Show';
   }
 
-  
   /**
-   * 显示或隐藏密码输入区域
-   * @param {boolean} show - 是否显示
-   * @param {boolean} hasEncryptedFiles - 是否有加密文件
+   * Show or hide password section near upload area
+   * @param {boolean} show
+   * @param {boolean} hasEncryptedFiles
    */
   togglePasswordSection(show, hasEncryptedFiles = false) {
     const passwordSection = getElement('#encryptionPasswordSection');
@@ -894,52 +879,52 @@ export class RecoveryTabManager {
     if (!passwordSection || !uploadArea) return;
 
     if (show && hasEncryptedFiles) {
-      // 显示密码输入区域
+      // Reveal password input
       toggleElement(passwordSection, true);
 
-      // 添加加密文件指示器
+      // Add encrypted files indicator
       this.addEncryptedFilesIndicator();
 
-      // 聚焦到密码输入框
+      // Focus password input shortly after
       setTimeout(() => {
         const passwordInput = getElement('#uploadEncryptionPassword');
         if (passwordInput) passwordInput.focus();
       }, 100);
     } else {
-      // 隐藏密码输入区域
+      // Hide password input
       toggleElement(passwordSection, false);
       this.removeEncryptedFilesIndicator();
     }
   }
 
   /**
-   * 添加加密文件指示器
+   * Add a small indicator above upload area when encrypted files are detected
    */
   addEncryptedFilesIndicator() {
     const uploadArea = getElement('#uploadArea');
     if (!uploadArea) return;
 
-    // 检查是否已存在指示器
+    // Avoid duplicates
     if (uploadArea.querySelector('.encrypted-files-indicator')) return;
 
     const indicator = createElement('div', ['encrypted-files-indicator']);
 
-    // 创建安全的DOM结构，防止XSS攻击
+    // Safe DOM structure
     const iconSpan = document.createElement('span');
     iconSpan.className = 'icon';
     iconSpan.textContent = '🔒';
     indicator.appendChild(iconSpan);
 
     const textSpan = document.createElement('span');
-    textSpan.textContent = t('encryption.encryptedFileDetected') || '检测到加密文件，需要输入密码进行解密';
+    textSpan.textContent = t('encryption.encryptedFileDetected') || 'Encrypted file(s) detected — enter password to decrypt.';
     indicator.appendChild(textSpan);
 
-    // 插入到上传区域之前
+    // Insert before upload area
     uploadArea.parentNode.insertBefore(indicator, uploadArea);
   }
 
   /**
-   * 移除加密文件指示器
+   * Remove encrypted files indicator
    */
   removeEncryptedFilesIndicator() {
     const indicator = document.querySelector('.encrypted-files-indicator');
@@ -949,37 +934,32 @@ export class RecoveryTabManager {
   }
 
   /**
-   * 应用解密
+   * Apply decryption to all encrypted files
    */
   async applyDecryption() {
     if (!this.uploadPassword) {
-      this.showError(t('encryption.passwordRequired') || '请输入解密密码');
+      this.showError(t('encryption.passwordRequired') || 'Please enter a decryption password.');
       return;
     }
 
-    // 获取所有加密文件
     const encryptedFiles = this.uploadedFiles.filter((file) => file.status === 'encrypted');
 
     if (encryptedFiles.length === 0) {
-      this.showError(t('encryption.noEncryptedFiles') || '没有需要解密的文件');
+      this.showError(t('encryption.noEncryptedFiles') || 'No encrypted files to decrypt.');
       return;
     }
 
-    // 尝试解密所有加密文件
     await this.retryDecryption(encryptedFiles, this.uploadPassword);
 
-    // 隐藏密码输入区域
+    // Hide password section after attempt
     this.togglePasswordSection(false);
   }
 
   /**
-   * 跳过解密
+   * Skip decryption flow and validate only plain files
    */
   skipDecryption() {
-    // 隐藏密码输入区域
     this.togglePasswordSection(false);
-
-    // 验证当前状态（只考虑未加密的文件）
     this.validateCurrentShares();
   }
 }

@@ -56,6 +56,23 @@
   --transition-slow: 300ms ease;
 }
 
+/* Dark Theme (enabled when data-theme="dark" on a parent, e.g., <body>) */
+[data-theme="dark"] {
+  --color-text: #e5e7eb;
+  --color-text-secondary: #9ca3af;
+  --color-text-tertiary: #6b7280;
+  --color-border: #374151;
+  --color-border-light: #1f2937;
+  --color-surface: #111827;
+  --color-surface-secondary: #0f172a;
+  --color-surface-tertiary: #1f2937;
+}
+
+/* Form controls: adjust select caret color in dark */
+[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
 /* Reset */
 * {
   margin: 0;
