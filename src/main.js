@@ -331,8 +331,8 @@ class MnemonicSplitApp {
       this.shareManager.showSuccess(i18n.t('success.sharesGenerated'));
       this.scrollToResult();
     } catch (err) {
-      const base = i18n.t('errors.generateFailed'); // simple string, sans placeholders
-      this.shareManager.showError(`${base}: ${err?.message || String(err)}`);
+      const baseError = i18n.t('errors.generateFailed') || 'Error generating shares';
+      this.shareManager.showError(`${baseError}: ${err?.message || String(err)}`);
     }
   }
 
