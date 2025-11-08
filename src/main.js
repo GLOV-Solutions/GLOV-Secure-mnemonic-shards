@@ -402,13 +402,13 @@ if (typeof window !== 'undefined') {
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     // Best-effort registration; ignore errors to avoid breaking the app
-    // Use Vite base URL so the SW is found under GitHub Pages subpath as well
+    // Use Vite's BASE_URL if available (e.g., GitHub Pages subpath)
     const base =
-      (typeof import !== 'undefined' &&
-        typeof import.meta !== 'undefined' &&
-        import.meta.env &&
-        import.meta.env.BASE_URL) ?
-        import.meta.env.BASE_URL : '/';
+      (typeof import.meta !== 'undefined' &&
+       import.meta.env &&
+       import.meta.env.BASE_URL)
+        ? import.meta.env.BASE_URL
+        : '/';
     const swUrl = base.replace(/\/$/, '') + '/sw.js';
     navigator.serviceWorker.register(swUrl).catch(() => {});
   });
