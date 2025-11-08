@@ -38,7 +38,7 @@
   "license": "ISC",
   "dependencies": {
   "openpgp": "^6.2.2",
-  "slip39": "^1.0.0",
+  "slip39": "^0.1.9",
   "shamir-secret-sharing": "^0.0.4",
   "bun": "^1.3.2"
   },
