@@ -11,6 +11,35 @@ import { APP_CONFIG, MNEMONIC_CONFIG, SELECTORS, CSS_CLASSES } from './constants
 import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
 
+// Polyfill for crypto.randomUUID (older engines or injected contexts)
+// Safe v4 UUID using crypto.getRandomValues; no inline code (CSP-friendly)
+(() => {
+  try {
+    if (typeof crypto !== 'undefined' && !crypto.randomUUID && crypto.getRandomValues) {
+      const bytes = () => {
+        const a = new Uint8Array(16);
+        crypto.getRandomValues(a);
+        // RFC 4122 version/variant bits
+        a[6] = (a[6] & 0x0f) | 0x40;
+        a[8] = (a[8] & 0x3f) | 0x80;
+        return a;
+      };
+      crypto.randomUUID = () => {
+        const b = bytes();
+        const toHex = (n) => n.toString(16).padStart(2, '0');
+        return (
+          toHex(b[0]) + toHex(b[1]) + toHex(b[2]) + toHex(b[3]) + '-' +
+          toHex(b[4]) + toHex(b[5]) + '-' +
+          toHex(b[6]) + toHex(b[7]) + '-' +
+          toHex(b[8]) + toHex(b[9]) + '-' +
+          toHex(b[10]) + toHex(b[11]) + toHex(b[12]) + toHex(b[13]) + toHex(b[14]) + toHex(b[15])
+        );
+      };
+    }
+  } catch (_) { /* ignore */ }
+})();
+
+
 /**
  * Main application class
  */
