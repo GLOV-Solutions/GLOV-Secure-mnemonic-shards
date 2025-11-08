@@ -148,6 +148,7 @@ body {
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
+  background-attachment: fixed;
   min-height: 100vh;
   padding: var(--space-lg);
   -webkit-text-size-adjust: 100%;
@@ -156,6 +157,12 @@ body {
   color: var(--color-text);
   line-height: 1.5;
   font-size: var(--font-size-base);
+}
+
+/* Container overlay in dark theme: lets content slide over fixed bg */
+[data-theme="dark"] .container {
+  background-color: rgba(0, 23, 19, 0.78);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* Layout */
