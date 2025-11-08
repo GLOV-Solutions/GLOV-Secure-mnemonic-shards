@@ -149,17 +149,30 @@ export class ShareManager {
         return false;
       }
 
-      // Split the mnemonic bytes
-      const secretBytes = new TextEncoder().encode(mnemonic);
-      const rawShares = await split(secretBytes, totalShares, threshold);
+      // Split the mnemonic as string (fallback to bytes if needed)
+      let rawShares;
+      try {
+        rawShares = await split(mnemonic, totalShares, threshold);
+      } catch (_) {
+        const secretBytes = new TextEncoder().encode(mnemonic);
+        rawShares = await split(secretBytes, totalShares, threshold);
+      }
 
       // Store Base64-encoded envelope (index/threshold/total + data)
       this.currentShares = rawShares.map((share, index) => {
+        let dataB64;
+        if (typeof share === 'string') {
+          dataB64 = btoa(share);
+        } else if (share instanceof Uint8Array) {
+          dataB64 = btoa(String.fromCharCode(...share));
+        } else {
+          dataB64 = btoa(String(share));
+        }
         const shareData = {
           index: index + 1,
           threshold,
           total: totalShares,
-          data: btoa(String.fromCharCode(...share)),
+          data: dataB64,
         };
         return btoa(JSON.stringify(shareData));
       });
@@ -449,15 +462,22 @@ export class ShareManager {
         throw new Error(t('errors.insufficientShares', threshold, validShareData.length));
       }
 
-      const shares = validShareData.slice(0, threshold).map((data) => {
-        const bin = atob(data.data);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        return bytes;
-      });
-
-      const recoveredBytes = await combine(shares);
-      const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
+      // Prefer passing string shares; fallback to bytes if needed
+      const shareStrings = validShareData.slice(0, threshold).map((data) => atob(data.data));
+      let combined;
+      try {
+        combined = await combine(shareStrings);
+      } catch (_) {
+        const shareBytes = shareStrings.map((bin) => {
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return bytes;
+        });
+        combined = await combine(shareBytes);
+      }
+      const recoveredMnemonic = combined instanceof Uint8Array
+        ? new TextDecoder().decode(combined)
+        : String(combined);
 
       this.displayRecoverResult(recoveredMnemonic, validShareData.length, threshold);
       return true;
@@ -567,15 +587,20 @@ export class ShareManager {
           throw new Error(t('errors.insufficientShares', threshold, finalShares.length));
         }
 
-        const shareBytes = finalShares.slice(0, threshold).map((data) => {
-          const bin = atob(data.data);
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          return bytes;
-        });
-
-        const recoveredBytes = await combine(shareBytes);
-        const mnemonic = new TextDecoder().decode(recoveredBytes);
+        // Try string shares first, then bytes
+        const shareStrings = finalShares.slice(0, threshold).map((data) => atob(data.data));
+        let combined;
+        try {
+          combined = await combine(shareStrings);
+        } catch (_) {
+          const shareBytes = shareStrings.map((bin) => {
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes;
+          });
+          combined = await combine(shareBytes);
+        }
+        const mnemonic = combined instanceof Uint8Array ? new TextDecoder().decode(combined) : String(combined);
 
         this.displayRecoverResult(mnemonic, finalShares.length, threshold);
         return true;
@@ -588,15 +613,19 @@ export class ShareManager {
         throw new Error(t('errors.insufficientShares', threshold, validShareData.length));
       }
 
-      const shareBytes = validShareData.slice(0, threshold).map((data) => {
-        const bin = atob(data.data);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        return bytes;
-      });
-
-      const recoveredBytes = await combine(shareBytes);
-      const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
+      const shareStrings2 = validShareData.slice(0, threshold).map((data) => atob(data.data));
+      let combined2;
+      try {
+        combined2 = await combine(shareStrings2);
+      } catch (_) {
+        const shareBytes2 = shareStrings2.map((bin) => {
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return bytes;
+        });
+        combined2 = await combine(shareBytes2);
+      }
+      const recoveredMnemonic = combined2 instanceof Uint8Array ? new TextDecoder().decode(combined2) : String(combined2);
 
       this.displayRecoverResult(recoveredMnemonic, validShareData.length, threshold);
       return true;

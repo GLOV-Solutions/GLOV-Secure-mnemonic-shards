@@ -23,11 +23,20 @@ export async function splitMnemonicToSlip39(p) {
   // - D'autres utilisent une classe/constructeur (SLIP39.generate(...)).
   // Le code ci-dessous est pour l'API "split/recover".
 
-  const mnems = slip.split(enc(secret), {
-    threshold,
-    shares: totalShares,
-    passphrase
-  });
+  let mnems;
+  try {
+    mnems = slip.split(enc(secret), {
+      threshold,
+      shares: totalShares,
+      passphrase
+    });
+  } catch (_) {
+    mnems = slip.split(secret, {
+      threshold,
+      shares: totalShares,
+      passphrase
+    });
+  }
 
   // si la lib renvoie un Promise, enlève l'await ci-dessus/ajoute ici selon le cas
   return Promise.resolve(mnems);
