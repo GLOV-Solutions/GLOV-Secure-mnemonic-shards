@@ -11,6 +11,12 @@ import { APP_CONFIG, MNEMONIC_CONFIG, SELECTORS, CSS_CLASSES } from './constants
 import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
 
+// ✅ NEW: SLIP-39 wrapper (encryption via OpenPGP; shares via SLIP-39)
+import {
+  generateSlip39ForMnemonic,
+  recoverMnemonicWithSlip39,
+} from './crypto/slip39Wrapper.js';
+
 // Polyfill for crypto.randomUUID (older engines or injected contexts)
 // Safe v4 UUID using crypto.getRandomValues; no inline code (CSP-friendly)
 (() => {
@@ -38,7 +44,6 @@ import { LANGUAGES } from './constants/i18n.js';
     }
   } catch (_) { /* ignore */ }
 })();
-
 
 /**
  * Main application class
@@ -82,16 +87,28 @@ class MnemonicSplitApp {
       addEvent(totalSharesSelect, 'change', () => this.updateThresholdOptions());
     }
 
-    // Generate shares
+    // Generate classic Shamir shares
     const generateBtn = getElement(SELECTORS.GENERATE_BTN);
     if (generateBtn) {
       addEvent(generateBtn, 'click', () => this.handleGenerateShares());
     }
 
-    // Recover mnemonic
+    // ✅ NEW: Generate SLIP-39 (IDs needed in HTML: #generateSlip39Btn, #slip39Passphrase)
+    const generateSlip39Btn = getElement('#generateSlip39Btn');
+    if (generateSlip39Btn) {
+      addEvent(generateSlip39Btn, 'click', () => this.handleGenerateSlip39());
+    }
+
+    // Recover mnemonic (classic paste/files tab)
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
     if (recoverBtn) {
       addEvent(recoverBtn, 'click', () => this.handleRecoverMnemonic());
+    }
+
+    // ✅ NEW: Recover via SLIP-39 (IDs: #recoverSlip39Btn, #slip39MnemonicsInput, #slip39Ciphertext, #slip39PassphraseRecover)
+    const recoverSlip39Btn = getElement('#recoverSlip39Btn');
+    if (recoverSlip39Btn) {
+      addEvent(recoverSlip39Btn, 'click', () => this.handleRecoverSlip39());
     }
 
     // Recover textarea: validate on input/paste (replaces inline handlers)
@@ -128,7 +145,6 @@ class MnemonicSplitApp {
     addEvent(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
   }
 
-
   /**
    * Setup language switcher (EN / FR)
    */
@@ -158,16 +174,11 @@ class MnemonicSplitApp {
 
   /**
    * Switch the app language
-   * @param {string} language - Language code
    */
   switchLanguage(language) {
     i18n.setLanguage(language);
   }
 
-  /**
-   * Update active state on language buttons
-   * @param {string} language - Language code
-   */
   updateLanguageUI(language) {
     const langButtons = document.querySelectorAll('.language-btn');
     langButtons.forEach((button) => {
@@ -177,9 +188,6 @@ class MnemonicSplitApp {
     });
   }
 
-  /**
-   * Update UI text that depends on current language
-   */
   updateDynamicContent() {
     this.updateThresholdOptions();
     this.updateTotalSharesOptions();
@@ -187,9 +195,6 @@ class MnemonicSplitApp {
     this.updateWordInputPlaceholders();
   }
 
-  /**
-   * Rebuild "total shares" select with translated labels
-   */
   updateTotalSharesOptions() {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     if (!totalSharesSelect) return;
@@ -207,9 +212,6 @@ class MnemonicSplitApp {
     });
   }
 
-  /**
-   * Refresh placeholders that use i18n keys
-   */
   updatePlaceholders() {
     const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
     if (recoverInput) {
@@ -218,9 +220,6 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Clear placeholders for mnemonic inputs (visual consistency)
-   */
   updateWordInputPlaceholders() {
     for (let i = 1; i <= this.currentWordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
@@ -228,9 +227,6 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Set initial UI state
-   */
   setInitialState() {
     this.updateWordCountButtons();
     // Render word inputs for the initial word count
@@ -238,10 +234,6 @@ class MnemonicSplitApp {
     this.shareManager.hideAllAlerts();
   }
 
-  /**
-   * Change mnemonic word count (12/24)
-   * @param {number} count - Number of words
-   */
   setWordCount(count) {
     if (!MNEMONIC_CONFIG.WORD_COUNTS.includes(count)) return;
 
@@ -251,9 +243,6 @@ class MnemonicSplitApp {
     this.shareManager.hideAllAlerts();
   }
 
-  /**
-   * Toggle active state for 12/24 buttons
-   */
   updateWordCountButtons() {
     const words12Btn = getElement('#words12');
     const words24Btn = getElement('#words24');
@@ -261,9 +250,6 @@ class MnemonicSplitApp {
     if (words24Btn) toggleClass(words24Btn, CSS_CLASSES.ACTIVE, this.currentWordCount === 24);
   }
 
-  /**
-   * Rebuild threshold select to reflect current total shares
-   */
   updateThresholdOptions() {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     const thresholdSelect = getElement(SELECTORS.THRESHOLD);
@@ -283,7 +269,16 @@ class MnemonicSplitApp {
   }
 
   /**
-   * Generate shard set from the current mnemonic
+   * Utility: read current BIP-39 from inputs as a single string
+   */
+  getCurrentBip39Phrase() {
+    const validation = this.mnemonicInput.validateAllInputs();
+    if (!validation.isValid) return { ok: false, validation };
+    return { ok: true, phrase: validation.words.join(' ') };
+  }
+
+  /**
+   * Generate shard set from the current mnemonic (classic Shamir)
    */
   async handleGenerateShares() {
     const validation = this.mnemonicInput.validateAllInputs();
@@ -309,7 +304,65 @@ class MnemonicSplitApp {
   }
 
   /**
-   * Recover mnemonic from provided shards (paste or file upload)
+   * ✅ NEW: Generate SLIP-39 mnemonics + OpenPGP ciphertext for the current BIP-39
+   * Required HTML IDs:
+   * - #slip39Passphrase (optional)
+   * - #slip39ResultCiphertext (block to display armored message)
+   * - #slip39ResultMnemonics (block to display mnemonics list)
+   */
+  async handleGenerateSlip39() {
+    try {
+      const bip39 = this.getCurrentBip39Phrase();
+      if (!bip39.ok) {
+        const v = bip39.validation;
+        if (v.hasEmpty) return this.shareManager.showError(i18n.t('errors.fillAllWords'));
+        if (v.hasInvalidWord) {
+          this.shareManager.showError(i18n.t('errors.invalidWord', v.invalidWordIndex));
+          return this.focusInvalidInput(v.invalidWordIndex);
+        }
+        return;
+      }
+
+      const totalShares = parseInt(getElement(SELECTORS.TOTAL_SHARES).value, 10);
+      const threshold = parseInt(getElement(SELECTORS.THRESHOLD).value, 10);
+      const passEl = getElement('#slip39Passphrase');
+      const slipPass = passEl && passEl.value ? passEl.value : undefined;
+
+      // Generate SLIP-39 set
+      const { ciphertext, mnemonics } = await generateSlip39ForMnemonic(
+        bip39.phrase,
+        threshold,
+        totalShares,
+        slipPass
+      );
+
+      // Render results (minimal UI — safe DOM updates)
+      const outCipher = getElement('#slip39ResultCiphertext');
+      const outList = getElement('#slip39ResultMnemonics');
+
+      if (outCipher) {
+        outCipher.textContent = ciphertext; // armored OpenPGP
+      }
+      if (outList) {
+        outList.innerHTML = ''; // reset
+        mnemonics.forEach((m, idx) => {
+          const li = document.createElement('li');
+          li.textContent = `${idx + 1}. ${m}`;
+          outList.appendChild(li);
+        });
+      }
+
+      this.shareManager.showSuccess(i18n.t('success.sharesGenerated'));
+      this.scrollToResult();
+    } catch (err) {
+      this.shareManager.showError(i18n.t('errors.generateFailed')
+        ? i18n.t('errors.generateFailed', err.message || String(err))
+        : `Failed to generate shares: ${err.message || err}`);
+    }
+  }
+
+  /**
+   * Recover mnemonic from provided shards (classic paste/file flow)
    */
   async handleRecoverMnemonic() {
     try {
@@ -340,10 +393,70 @@ class MnemonicSplitApp {
     }
   }
 
+  /**
+   * ✅ NEW: Recover via SLIP-39 mnemonics + OpenPGP ciphertext
+   * Required HTML IDs:
+   * - #slip39MnemonicsInput (textarea: one mnemonic per line)
+   * - #slip39Ciphertext (textarea/input with armored OpenPGP)
+   * - #slip39PassphraseRecover (optional passphrase used at SLIP-39 level)
+   * Renders the recovered BIP-39 into existing #recoverResult area.
+   */
+  async handleRecoverSlip39() {
+    const btn = getElement('#recoverSlip39Btn');
+    try {
+      const mnemsEl = getElement('#slip39MnemonicsInput');
+      const ctEl = getElement('#slip39Ciphertext');
+      const passEl = getElement('#slip39PassphraseRecover');
+
+      if (!mnemsEl || !ctEl) {
+        this.shareManager.showError('SLIP-39 recovery inputs are missing in DOM.');
+        return;
+      }
+
+      const mnemonics = mnemsEl.value
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (mnemonics.length === 0) {
+        this.shareManager.showError(i18n.t('errors.noValidShares'));
+        return;
+      }
+      const ciphertext = ctEl.value.trim();
+      if (!ciphertext) {
+        this.shareManager.showError('Missing ciphertext.');
+        return;
+      }
+      const pass = passEl && passEl.value ? passEl.value : undefined;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = i18n.t('info.recovering');
+      }
+
+      const bip39 = await recoverMnemonicWithSlip39(mnemonics, ciphertext, pass);
+
+      // Render into existing recover result panel
+      const recDiv = getElement(SELECTORS.RECOVER_RESULT);
+      if (recDiv) {
+        recDiv.innerHTML = '';
+        const pre = document.createElement('pre');
+        pre.textContent = bip39;
+        recDiv.appendChild(pre);
+      }
+      this.shareManager.showSuccess(i18n.t('success.mnemonicRecovered'));
+      this.scrollToResult();
+    } catch (err) {
+      this.shareManager.showError(i18n.t('errors.recoveryFailed') + (err?.message || String(err)));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = i18n.t('recoverBtn'); // reuse the label
+      }
+    }
+  }
 
   /**
    * Focus the first invalid word input
-   * @param {number} index - 1-based input index
    */
   focusInvalidInput(index) {
     const input = getElement(SELECTORS.WORD_INPUT(index));
@@ -353,19 +466,12 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Smooth-scroll to the result section
-   */
   scrollToResult() {
     const resultDiv =
       getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
     if (resultDiv) resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  /**
-   * Global keyboard shortcuts
-   * @param {KeyboardEvent} e - Keyboard event
-   */
   handleKeyboardShortcuts(e) {
     // Ctrl/Cmd + Enter: generate or recover
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -389,10 +495,6 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Expose app info (useful for diagnostics)
-   * @returns {Object} Application metadata
-   */
   getAppInfo() {
     return {
       name: APP_CONFIG.NAME,
@@ -402,9 +504,6 @@ class MnemonicSplitApp {
     };
   }
 
-  /**
-   * Cleanup resources on teardown
-   */
   destroy() {
     this.mnemonicInput.destroy();
     this.shareManager.destroy();
@@ -415,9 +514,6 @@ class MnemonicSplitApp {
 // Global app instance
 let app;
 
-/**
- * Bootstrap the application
- */
 function initApp() {
   try {
     app = new MnemonicSplitApp();
@@ -426,9 +522,6 @@ function initApp() {
   }
 }
 
-/**
- * Bind safe functions to window for inline handlers
- */
 function bindGlobalFunctions() {
   window.setWordCount = (count) => app && app.setWordCount(count);
   window.generateShares = () => app && app.handleGenerateShares();
@@ -437,6 +530,10 @@ function bindGlobalFunctions() {
     app && app.shareManager.downloadShare(shareContent, shareIndex);
   window.recoverMnemonic = () => app && app.handleRecoverMnemonic();
   window.validateShares = () => app && app.recoveryTabManager && app.recoveryTabManager.validateCurrentTab();
+
+  // ✅ Provide SLIP-39 functions too (if you want to trigger them externally)
+  window.generateSlip39 = () => app && app.handleGenerateSlip39();
+  window.recoverSlip39 = () => app && app.handleRecoverSlip39();
 }
 
 // Initialize on DOM ready
@@ -457,11 +554,8 @@ if (typeof window !== 'undefined') {
 }
 
 // Register the service worker on window load (if supported)
-// - Ensures offline caching for same-origin assets via public/sw.js
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Best-effort registration; ignore errors to avoid breaking the app
-    // Use Vite's BASE_URL if available (e.g., GitHub Pages subpath)
     const base =
       (typeof import.meta !== 'undefined' &&
        import.meta.env &&
