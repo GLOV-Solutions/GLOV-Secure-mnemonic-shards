@@ -1,15 +1,16 @@
 /**
- * 应用常量配置
+ * Application constants and configuration
  */
 
-// 应用信息
+// Application info
 export const APP_CONFIG = {
-  NAME: 'MnemonicShards',
-  DESCRIPTION: '安全地将助记词分割成多个分片，任意指定数量的分片即可恢复原始助记词',
+  NAME: 'GLOV Secure — Mnemonic Shards',
+  DESCRIPTION:
+    'Securely split a BIP-39 mnemonic into multiple shards; any chosen threshold of shards can recover the original mnemonic.',
   VERSION: '1.0.0',
 };
 
-// 助记词配置
+// Mnemonic configuration
 export const MNEMONIC_CONFIG = {
   WORD_COUNTS: [12, 24],
   DEFAULT_WORD_COUNT: 12,
@@ -19,19 +20,19 @@ export const MNEMONIC_CONFIG = {
   DEFAULT_THRESHOLD: 3,
 };
 
-// UI配置
+// UI configuration
 export const UI_CONFIG = {
-  // 移动端断点
+  // Mobile breakpoint (px)
   MOBILE_BREAKPOINT: 768,
 
-  // 动画时长（毫秒）
+  // Animation durations (ms)
   ANIMATION_DURATION: {
     FAST: 150,
     NORMAL: 200,
     SLOW: 300,
   },
 
-  // 延迟时间（毫秒）
+  // Delays (ms)
   DELAY: {
     DEBOUNCE: 100,
     AUTO_HIDE_ALERT: 3000,
@@ -39,56 +40,56 @@ export const UI_CONFIG = {
     COPY_FEEDBACK: 2000,
   },
 
-  // 建议列表配置
+  // Suggestions dropdown config
   SUGGESTIONS: {
     MAX_SUGGESTIONS: 5,
     MOBILE_MAX_HEIGHT: '150px',
     MOBILE_BOTTOM_OFFSET: '20px',
   },
 
-  // 文件下载配置
+  // File download configuration
   DOWNLOAD: {
-    FILE_PREFIX: 'shareFilePrefix', // 国际化键
+    FILE_PREFIX: 'shareFilePrefix', // i18n key used by the UI layer
     FILE_EXTENSION: '.txt',
   },
 };
 
-// DOM选择器
+// DOM selectors
 export const SELECTORS = {
-  // 容器
+  // Containers
   CONTAINER: '.container',
   MAIN_CONTENT: '.main-content',
 
-  // 控件
+  // Controls
   WORDS_GRID: '#wordsGrid',
   TOTAL_SHARES: '#totalShares',
   THRESHOLD: '#threshold',
 
-  // 按钮
+  // Buttons
   GENERATE_BTN: '#generateBtn',
   RECOVER_BTN: '#recoverBtn',
 
-  // 输入框
+  // Inputs
   RECOVER_INPUT: '#recoverInput',
 
-  // 结果区域
+  // Result areas
   SHARES_RESULT: '#sharesResult',
   SHARES_LIST: '#sharesList',
   RECOVER_RESULT: '#recoverResult',
   PASTE_RECOVER_RESULT: '#pasteRecoverResult',
   UPLOAD_RECOVER_RESULT: '#uploadRecoverResult',
 
-  // 提示区域
+  // Alerts / statuses
   INPUT_ERROR_ALERT: '#inputErrorAlert',
   DUPLICATE_ALERT: '#duplicateAlert',
   GENERAL_ERROR_ALERT: '#generalErrorAlert',
   SUCCESS_ALERT: '#successAlert',
   INPUT_STATUS: '#inputStatus',
 
-  // 显示
+  // Display values
   THRESHOLD_DISPLAY: '#thresholdDisplay',
 
-  // 加密相关
+  // Encryption-related
   ENCRYPTION_SECTION: '#encryptionSection',
   ENABLE_ENCRYPTION: '#enableEncryption',
   ENCRYPTION_FIELDS: '#encryptionFields',
@@ -99,72 +100,76 @@ export const SELECTORS = {
   RECOVERY_PASSWORD_SECTION: '#recoveryPasswordSection',
   RECOVERY_PASSWORD: '#recoveryPassword',
 
-  // 动态生成
+  // Dynamically generated elements
   WORD_INPUT: (index) => `#word${index}`,
   SUGGESTIONS: (index) => `#suggestions${index}`,
 };
 
-// CSS类名
+// CSS class names
 export const CSS_CLASSES = {
-  // 状态类
+  // State classes
   ACTIVE: 'active',
   DISABLED: 'disabled',
 
-  // 验证状态
+  // Validation states
   VALID_WORD: 'valid-word',
   INVALID_WORD: 'invalid-word',
   DUPLICATE_WORD: 'duplicate-word',
 
-  // 提示类
+  // Alert classes
   ALERT: 'alert',
   ALERT_SUCCESS: 'alert-success',
   ALERT_ERROR: 'alert-error',
   ALERT_INFO: 'alert-info',
   ALERT_WARNING: 'alert-warning',
 
-  // 输入状态
+  // Input status
   INPUT_STATUS: 'input-status',
   INPUT_WAITING: 'waiting',
   INPUT_VALID: 'valid',
   INPUT_INVALID: 'invalid',
   INPUT_INSUFFICIENT: 'insufficient',
 
-  // 按钮状态
+  // Button feedback
   COPIED: 'copied',
 };
 
-// 错误消息
+// Error messages (English)
 export const ERROR_MESSAGES = {
-  EMPTY_WORDS: '请填写所有助记词！',
-  INVALID_WORD: (index) => `第 ${index} 个单词不是有效的 BIP39 单词，请从建议列表中选择有效的单词。`,
-  DUPLICATE_WORDS: (words) => `检测到重复单词：${words}。助记词中的单词应该是唯一的，请修改重复的单词。`,
-  INVALID_SHARE_FORMAT: '未检测到有效分片，请检查格式',
-  INSUFFICIENT_SHARES: (valid, threshold) => `需要至少 ${threshold} 个分片，当前只有 ${valid} 个`,
-  NO_VALID_SHARES: '没有找到有效的分片数据',
-  COPY_FAILED: '复制失败，请手动复制',
-  DOWNLOAD_FAILED: '下载失败，请重试',
-  GENERATE_FAILED: (error) => `生成分片失败: ${error}`,
-  RECOVER_FAILED: (error) => `恢复失败：${error}`,
+  EMPTY_WORDS: 'Please fill in all mnemonic words.',
+  INVALID_WORD: (index) =>
+    `Word #${index} is not a valid BIP-39 word. Please choose a valid word from the suggestions.`,
+  DUPLICATE_WORDS: (words) =>
+    `Duplicate words detected: ${words}. Mnemonic words should be unique — please adjust the duplicates.`,
+  INVALID_SHARE_FORMAT: 'No valid shard detected. Please check the input format.',
+  INSUFFICIENT_SHARES: (valid, threshold) =>
+    `At least ${threshold} shards are required. Currently only ${valid} valid shard(s) detected.`,
+  NO_VALID_SHARES: 'No valid shard data found.',
+  COPY_FAILED: 'Copy failed. Please copy manually.',
+  DOWNLOAD_FAILED: 'Download failed. Please try again.',
+  GENERATE_FAILED: (error) => `Failed to generate shards: ${error}`,
+  RECOVER_FAILED: (error) => `Recovery failed: ${error}`,
 };
 
-// 成功消息
+// Success messages (English)
 export const SUCCESS_MESSAGES = {
-  SHARES_GENERATED: '分片生成成功！请安全保存这些分片。',
-  SHARE_DOWNLOADED: (index) => `分片 ${index} 已下载`,
-  SHARE_COPIED: '已复制到剪贴板',
+  SHARES_GENERATED: 'Shards generated successfully! Please store them securely.',
+  SHARE_DOWNLOADED: (index) => `Shard ${index} downloaded.`,
+  SHARE_COPIED: 'Copied to clipboard.',
 };
 
-// 信息消息
+// Informational messages (English)
 export const INFO_MESSAGES = {
-  WAITING_SHARES: '等待输入分片...',
-  VALID_SHARES: (valid, threshold) => `检测到 ${valid} 个有效分片（需要 ${threshold} 个），可以开始恢复`,
-  INVALID_FORMAT: '分片格式错误，请检查输入',
+  WAITING_SHARES: 'Waiting for shard input…',
+  VALID_SHARES: (valid, threshold) =>
+    `${valid} valid shard(s) detected (threshold: ${threshold}). You can proceed with recovery.`,
+  INVALID_FORMAT: 'Invalid shard format. Please check your input.',
 };
 
-// 文件模板
+// File content template
 export const FILE_TEMPLATES = {
   SHARE_CONTENT: (index, content) => {
-    // 这些将在使用时通过国际化函数处理
+    // These fields will be localized/formatted by the UI/i18n layer when used
     return {
       index,
       content,
@@ -173,7 +178,7 @@ export const FILE_TEMPLATES = {
   },
 };
 
-// BIP39相关
+// BIP-39 wordlist config (served locally for offline mode)
 export const BIP39_CONFIG = {
   WORDLIST_URL: './constants/bip39-words.js',
 };
