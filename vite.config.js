@@ -53,6 +53,7 @@ export default defineConfig({
     cssCodeSplit: false,
     // Ensure all assets are inlined (single-file build)
     assetsInlineLimit: 100000000,
+    modulePreload: { polyfill: false },
   },
   optimizeDeps: {
     include: ['shamir-secret-sharing'],
