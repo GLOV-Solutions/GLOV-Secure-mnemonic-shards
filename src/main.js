@@ -41,14 +41,13 @@ class MnemonicSplitApp {
    * Wire up DOM event listeners
    */
   setupEventListeners() {
-    // Word count toggles
+    // Word count toggles (12 / 24)
     const words12Btn = getElement('#words12');
     const words24Btn = getElement('#words24');
-
     if (words12Btn) addEvent(words12Btn, 'click', () => this.setWordCount(12));
     if (words24Btn) addEvent(words24Btn, 'click', () => this.setWordCount(24));
 
-    // Update threshold options when total shares changes
+    // Total shares change => rebuild threshold options
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     if (totalSharesSelect) {
       addEvent(totalSharesSelect, 'change', () => this.updateThresholdOptions());
@@ -66,9 +65,40 @@ class MnemonicSplitApp {
       addEvent(recoverBtn, 'click', () => this.handleRecoverMnemonic());
     }
 
+    // Recover textarea: validate on input/paste (replaces inline handlers)
+    const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
+    if (recoverInput) {
+      addEvent(recoverInput, 'input', () => {
+        if (this.recoveryTabManager) this.recoveryTabManager.validateCurrentTab();
+      });
+      addEvent(recoverInput, 'paste', () => {
+        setTimeout(() => {
+          if (this.recoveryTabManager) this.recoveryTabManager.validateCurrentTab();
+        }, 100);
+      });
+    }
+
+    // Optional: event delegation for share action buttons to avoid any inline handlers
+    const sharesList = getElement('#sharesList');
+    if (sharesList) {
+      addEvent(sharesList, 'click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const content = btn.dataset.content;
+        if (action === 'copy') {
+          this.shareManager.copyShare(btn, content);
+        } else if (action === 'download') {
+          const idx = parseInt(btn.dataset.index || '0', 10);
+          this.shareManager.downloadShare(content, idx);
+        }
+      });
+    }
+
     // Keyboard shortcuts
     addEvent(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
   }
+
 
   /**
    * Setup language switcher (EN / FR)
@@ -263,7 +293,6 @@ class MnemonicSplitApp {
       }
 
       const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
-      if (recOVERBtn) { /* intentional typo check? No. We'll correct below */ }
       if (recoverBtn) {
         recoverBtn.disabled = true;
         recoverBtn.textContent = i18n.t('info.recovering');
@@ -281,6 +310,7 @@ class MnemonicSplitApp {
       }
     }
   }
+
 
   /**
    * Focus the first invalid word input

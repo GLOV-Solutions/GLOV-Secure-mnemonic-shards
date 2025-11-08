@@ -6,15 +6,19 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <!-- Security: ultra-strict CSP to keep the app fully offline and self-contained -->
+    <!-- Security: strict CSP suitable for offline single-page app; no inline scripts allowed -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; base-uri 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; worker-src 'self'"
+      content="default-src 'none'; base-uri 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'"
     />
+    <!-- Favicon: served from /public/favicon.ico -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- Optional SVG data URL favicon kept for dev convenience -->
     <link
       rel="icon"
       type="image/svg+xml"
-      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%234599d8"/><path d="M20 42l10-18 8 10 8-8 6 10" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%234599d8"/><path d="M20 42l10-18 8 10 8-8 6 10" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    />
 
     <title>GLOV Secure — Mnemonic Shards (Offline Shamir & Optional SLIP-39)</title>
     <link rel="stylesheet" href="/src/styles/styles.css" />
@@ -37,8 +41,8 @@
         <div class="language-switcher">
           <span class="language-switcher-label" data-i18n="language">Language</span>
           <div class="language-toggle">
-            <button class="language-btn active" data-lang="en">EN</button>
-            <button class="language-btn" data-lang="fr">FR</button>
+            <button class="language-btn active" id="btnLangEn" data-lang="en">EN</button>
+            <button class="language-btn" id="btnLangFr" data-lang="fr">FR</button>
           </div>
         </div>
 
@@ -71,7 +75,6 @@
         </p>
       </div>
 
-
       <div class="main-content">
         <!-- Security notice (runs offline, recommend air-gapped usage) -->
         <div class="alert security-notice" data-i18n="securityNotice">
@@ -88,10 +91,9 @@
             <div class="control-group">
               <label data-i18n="wordCountLabel">Mnemonic Word Count</label>
               <div class="btn-group" id="wordCountButtons">
-                <button id="words12" class="active" onclick="setWordCount(12)" data-i18n="words12">
-                  12 words
-                </button>
-                <button id="words24" onclick="setWordCount(24)" data-i18n="words24">24 words</button>
+                <!-- Removed inline handlers: JS attaches listeners -->
+                <button id="words12" class="active" data-i18n="words12">12 words</button>
+                <button id="words24" data-i18n="words24">24 words</button>
               </div>
             </div>
 
@@ -142,7 +144,8 @@
             <!-- Inputs are generated dynamically -->
           </div>
 
-          <button class="action-btn" onclick="generateShares()" id="generateBtn" data-i18n="generateBtn">
+          <!-- Removed inline onclick; JS attaches listener -->
+          <button class="action-btn" id="generateBtn" data-i18n="generateBtn">
             Generate Shares
           </button>
         </div>
@@ -254,8 +257,6 @@ Example format:
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjIsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9"
-                oninput="validateShares()"
-                onpaste="setTimeout(validateShares, 100)"
                 spellcheck="false"
                 autocomplete="off"
                 autocorrect="off"
@@ -375,6 +376,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
       </footer>
     </div>
 
+    <!-- Only module scripts; no inline JS to satisfy CSP -->
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
