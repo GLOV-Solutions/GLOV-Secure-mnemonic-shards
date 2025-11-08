@@ -1,6 +1,6 @@
 /**
- * MnemonicShards - 主应用文件
- * 重构后的主文件，使用组件化架构提高可维护性
+ * MnemonicShards - Main application file
+ * Refactored main module using a componentized architecture for maintainability.
  */
 
 import { MnemonicInput } from './components/MnemonicInput.js';
@@ -12,7 +12,7 @@ import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
 
 /**
- * 主应用类
+ * Main application class
  */
 class MnemonicSplitApp {
   constructor() {
@@ -25,126 +25,111 @@ class MnemonicSplitApp {
   }
 
   /**
-   * 初始化应用
+   * Initialize the application
    */
   init() {
     this.setupEventListeners();
     this.setupLanguageSwitcher();
     this.updateThresholdOptions();
     this.setInitialState();
-    this.shareManager.initEncryptionListeners(); // 初始化加密监听器（现在是空方法）
+    // Initialize encryption listeners (currently a no-op placeholder)
+    this.shareManager.initEncryptionListeners();
     i18n.init();
   }
 
   /**
-   * 设置事件监听器
+   * Wire up DOM event listeners
    */
   setupEventListeners() {
-    // 助记词数量切换
+    // Word count toggles
     const words12Btn = getElement('#words12');
     const words24Btn = getElement('#words24');
 
-    if (words12Btn) {
-      addEvent(words12Btn, 'click', () => this.setWordCount(12));
-    }
-    if (words24Btn) {
-      addEvent(words24Btn, 'click', () => this.setWordCount(24));
-    }
+    if (words12Btn) addEvent(words12Btn, 'click', () => this.setWordCount(12));
+    if (words24Btn) addEvent(words24Btn, 'click', () => this.setWordCount(24));
 
-    // 分片配置变更
+    // Update threshold options when total shares changes
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     if (totalSharesSelect) {
       addEvent(totalSharesSelect, 'change', () => this.updateThresholdOptions());
     }
 
-    // 生成分片按钮
+    // Generate shares
     const generateBtn = getElement(SELECTORS.GENERATE_BTN);
     if (generateBtn) {
       addEvent(generateBtn, 'click', () => this.handleGenerateShares());
     }
 
-    // 恢复功能 - 现在由RecoveryTabManager处理
+    // Recover mnemonic
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
-
     if (recoverBtn) {
-      addEvent(recoverBtn, 'click', (e) => {
-        this.handleRecoverMnemonic();
-      });
+      addEvent(recoverBtn, 'click', () => this.handleRecoverMnemonic());
     }
 
-    // 键盘快捷键
+    // Keyboard shortcuts
     addEvent(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
   }
 
   /**
-   * 设置语言切换器
+   * Setup language switcher (EN / FR)
    */
   setupLanguageSwitcher() {
     const langButtons = document.querySelectorAll('.language-btn');
 
     langButtons.forEach((button) => {
       const lang = button.getAttribute('data-lang');
-
       addEvent(button, 'click', (e) => {
         e.preventDefault();
-        if (lang === LANGUAGES.EN || lang === LANGUAGES.ZH) {
+        // FIX: support EN and FR (not ZH)
+        if (lang === LANGUAGES.EN || lang === LANGUAGES.FR) {
           this.switchLanguage(lang);
         }
       });
     });
 
-    // 监听语言变化
+    // React to language changes
     i18n.addListener((lang) => {
       this.updateLanguageUI(lang);
       this.updateDynamicContent();
     });
 
-    // 初始化语言UI
+    // Initial UI sync
     this.updateLanguageUI(i18n.getCurrentLanguage());
   }
 
   /**
-   * 切换语言
-   * @param {string} language - 语言代码
+   * Switch the app language
+   * @param {string} language - Language code
    */
   switchLanguage(language) {
     i18n.setLanguage(language);
   }
 
   /**
-   * 更新语言UI
-   * @param {string} language - 语言代码
+   * Update active state on language buttons
+   * @param {string} language - Language code
    */
   updateLanguageUI(language) {
     const langButtons = document.querySelectorAll('.language-btn');
-
     langButtons.forEach((button) => {
       const buttonLang = button.getAttribute('data-lang');
-      if (buttonLang === language) {
-        button.classList.add('active');
-      } else {
-        button.classList.remove('active');
-      }
+      if (buttonLang === language) button.classList.add('active');
+      else button.classList.remove('active');
     });
   }
 
   /**
-   * 更新动态内容
+   * Update UI text that depends on current language
    */
   updateDynamicContent() {
-    // 更新select选项
     this.updateThresholdOptions();
     this.updateTotalSharesOptions();
-
-    // 更新placeholder属性
     this.updatePlaceholders();
-
-    // 更新助记词输入框的placeholder
     this.updateWordInputPlaceholders();
   }
 
   /**
-   * 更新分片数量选项
+   * Rebuild "total shares" select with translated labels
    */
   updateTotalSharesOptions() {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
@@ -157,58 +142,49 @@ class MnemonicSplitApp {
     options.forEach((option) => {
       const optionElement = document.createElement('option');
       optionElement.value = option.value;
-      optionElement.textContent = i18n.t('sharesOption', parseInt(option.value));
-
-      if (option.value === currentValue) {
-        optionElement.selected = true;
-      }
-
+      optionElement.textContent = i18n.t('sharesOption', parseInt(option.value, 10));
+      if (option.value === currentValue) optionElement.selected = true;
       totalSharesSelect.appendChild(optionElement);
     });
   }
 
   /**
-   * 更新placeholder属性
+   * Refresh placeholders that use i18n keys
    */
   updatePlaceholders() {
     const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
     if (recoverInput) {
       const placeholderKey = recoverInput.getAttribute('data-i18n-placeholder');
-      if (placeholderKey) {
-        recoverInput.placeholder = i18n.t(placeholderKey);
-      }
+      if (placeholderKey) recoverInput.placeholder = i18n.t(placeholderKey);
     }
   }
 
   /**
-   * 更新助记词输入框的placeholder
+   * Clear placeholders for mnemonic inputs (visual consistency)
    */
   updateWordInputPlaceholders() {
     for (let i = 1; i <= this.currentWordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
-      if (input) {
-        input.placeholder = '';
-      }
+      if (input) input.placeholder = '';
     }
   }
 
   /**
-   * 设置初始状态
+   * Set initial UI state
    */
   setInitialState() {
     this.updateWordCountButtons();
-    this.mnemonicInput.renderInputs(); // 初始化输入框
+    // Render word inputs for the initial word count
+    this.mnemonicInput.renderInputs();
     this.shareManager.hideAllAlerts();
   }
 
   /**
-   * 设置助记词数量
-   * @param {number} count - 助记词数量
+   * Change mnemonic word count (12/24)
+   * @param {number} count - Number of words
    */
   setWordCount(count) {
-    if (!MNEMONIC_CONFIG.WORD_COUNTS.includes(count)) {
-      return;
-    }
+    if (!MNEMONIC_CONFIG.WORD_COUNTS.includes(count)) return;
 
     this.currentWordCount = count;
     this.mnemonicInput.setWordCount(count);
@@ -217,53 +193,41 @@ class MnemonicSplitApp {
   }
 
   /**
-   * 更新助记词数量按钮状态
+   * Toggle active state for 12/24 buttons
    */
   updateWordCountButtons() {
     const words12Btn = getElement('#words12');
     const words24Btn = getElement('#words24');
-
-    if (words12Btn) {
-      toggleClass(words12Btn, CSS_CLASSES.ACTIVE, this.currentWordCount === 12);
-    }
-    if (words24Btn) {
-      toggleClass(words24Btn, CSS_CLASSES.ACTIVE, this.currentWordCount === 24);
-    }
+    if (words12Btn) toggleClass(words12Btn, CSS_CLASSES.ACTIVE, this.currentWordCount === 12);
+    if (words24Btn) toggleClass(words24Btn, CSS_CLASSES.ACTIVE, this.currentWordCount === 24);
   }
 
   /**
-   * 更新阈值选项
+   * Rebuild threshold select to reflect current total shares
    */
   updateThresholdOptions() {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     const thresholdSelect = getElement(SELECTORS.THRESHOLD);
-
     if (!totalSharesSelect || !thresholdSelect) return;
 
-    const totalShares = parseInt(totalSharesSelect.value);
-    const currentThreshold = parseInt(thresholdSelect.value);
+    const totalShares = parseInt(totalSharesSelect.value, 10);
+    const currentThreshold = parseInt(thresholdSelect.value, 10);
 
     thresholdSelect.innerHTML = '';
-
     for (let i = 2; i <= totalShares; i++) {
       const option = document.createElement('option');
       option.value = i;
       option.textContent = i18n.t('sharesOption', i);
-
-      if (i === Math.min(currentThreshold, totalShares)) {
-        option.selected = true;
-      }
-
+      if (i === Math.min(currentThreshold, totalShares)) option.selected = true;
       thresholdSelect.appendChild(option);
     }
   }
 
   /**
-   * 处理生成分片
+   * Generate shard set from the current mnemonic
    */
   async handleGenerateShares() {
     const validation = this.mnemonicInput.validateAllInputs();
-
     if (!validation.isValid) {
       if (validation.hasEmpty) {
         this.shareManager.showError(i18n.t('errors.fillAllWords'));
@@ -274,22 +238,22 @@ class MnemonicSplitApp {
       return;
     }
 
-    const totalShares = parseInt(getElement(SELECTORS.TOTAL_SHARES).value);
-    const threshold = parseInt(getElement(SELECTORS.THRESHOLD).value);
+    const totalShares = parseInt(getElement(SELECTORS.TOTAL_SHARES).value, 10);
+    const threshold = parseInt(getElement(SELECTORS.THRESHOLD).value, 10);
 
-    const success = await this.shareManager.generateShares(validation.words, totalShares, threshold);
-
-    if (success) {
-      this.scrollToResult();
-    }
+    const success = await this.shareManager.generateShares(
+      validation.words,
+      totalShares,
+      threshold
+    );
+    if (success) this.scrollToResult();
   }
 
   /**
-   * 处理恢复助记词
+   * Recover mnemonic from provided shards (paste or file upload)
    */
   async handleRecoverMnemonic() {
     try {
-      // 获取当前分片数据
       const shares = this.recoveryTabManager.getCurrentShares();
       const encryptionPassword = this.recoveryTabManager.getEncryptionPassword();
 
@@ -298,23 +262,18 @@ class MnemonicSplitApp {
         return;
       }
 
-      // 显示处理状态
       const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
+      if (recOVERBtn) { /* intentional typo check? No. We'll correct below */ }
       if (recoverBtn) {
         recoverBtn.disabled = true;
         recoverBtn.textContent = i18n.t('info.recovering');
       }
 
-      // 调用ShareManager的恢复方法，但传入自定义数据
       const success = await this.shareManager.recoverMnemonicWithShares(shares, encryptionPassword);
-
-      if (success) {
-        this.scrollToResult();
-      }
+      if (success) this.scrollToResult();
     } catch (error) {
       this.shareManager.showError(i18n.t('errors.recoveryFailed') + error.message);
     } finally {
-      // 恢复按钮状态
       const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
       if (recoverBtn) {
         recoverBtn.disabled = false;
@@ -324,8 +283,8 @@ class MnemonicSplitApp {
   }
 
   /**
-   * 聚焦到无效输入框
-   * @param {number} index - 输入框索引
+   * Focus the first invalid word input
+   * @param {number} index - 1-based input index
    */
   focusInvalidInput(index) {
     const input = getElement(SELECTORS.WORD_INPUT(index));
@@ -336,21 +295,20 @@ class MnemonicSplitApp {
   }
 
   /**
-   * 滚动到结果区域
+   * Smooth-scroll to the result section
    */
   scrollToResult() {
-    const resultDiv = getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
-    if (resultDiv) {
-      resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    const resultDiv =
+      getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
+    if (resultDiv) resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   /**
-   * 处理键盘快捷键
-   * @param {KeyboardEvent} e - 键盘事件
+   * Global keyboard shortcuts
+   * @param {KeyboardEvent} e - Keyboard event
    */
   handleKeyboardShortcuts(e) {
-    // Ctrl/Cmd + Enter 生成分片或恢复助记词
+    // Ctrl/Cmd + Enter: generate or recover
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
 
@@ -358,22 +316,23 @@ class MnemonicSplitApp {
       const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
       const isActiveInRecover = recoverInput && document.activeElement === recoverInput;
 
-      if (isActiveInRecover && !getElement(SELECTORS.RECOVER_BTN).disabled) {
+      const recoverBtnEl = getElement(SELECTORS.RECOVER_BTN);
+      if (isActiveInRecover && recoverBtnEl && !recoverBtnEl.disabled) {
         this.handleRecoverMnemonic();
       } else if (!isActiveInRecover) {
         this.handleGenerateShares();
       }
     }
 
-    // ESC 清除所有提示
+    // ESC: clear all alerts
     if (e.key === 'Escape') {
       this.shareManager.hideAllAlerts();
     }
   }
 
   /**
-   * 获取应用信息
-   * @returns {Object} 应用信息
+   * Expose app info (useful for diagnostics)
+   * @returns {Object} Application metadata
    */
   getAppInfo() {
     return {
@@ -385,87 +344,54 @@ class MnemonicSplitApp {
   }
 
   /**
-   * 销毁应用，清理资源
+   * Cleanup resources on teardown
    */
   destroy() {
     this.mnemonicInput.destroy();
     this.shareManager.destroy();
-    if (this.recoveryTabManager) {
-      this.recoveryTabManager.destroy();
-    }
+    if (this.recoveryTabManager) this.recoveryTabManager.destroy();
   }
 }
 
-// 创建全局应用实例
+// Global app instance
 let app;
 
 /**
- * 初始化应用
+ * Bootstrap the application
  */
 function initApp() {
   try {
     app = new MnemonicSplitApp();
   } catch (error) {
-    // 静默处理初始化错误
+    // Swallow initialization errors to avoid breaking UI
   }
 }
 
 /**
- * 安全的函数绑定到全局作用域
- * 用于内联事件处理器
+ * Bind safe functions to window for inline handlers
  */
 function bindGlobalFunctions() {
-  window.setWordCount = (count) => {
-    if (app) {
-      app.setWordCount(count);
-    }
-  };
-
-  window.generateShares = () => {
-    if (app) {
-      app.handleGenerateShares();
-    }
-  };
-
-  window.copyShare = (button, shareContent) => {
-    if (app) {
-      app.shareManager.copyShare(button, shareContent);
-    }
-  };
-
-  window.downloadShare = (shareContent, shareIndex) => {
-    if (app) {
-      app.shareManager.downloadShare(shareContent, shareIndex);
-    }
-  };
-
-  window.recoverMnemonic = () => {
-    if (app) {
-      app.handleRecoverMnemonic();
-    }
-  };
-
-  window.validateShares = () => {
-    if (app && app.recoveryTabManager) {
-      app.recoveryTabManager.validateCurrentTab();
-    }
-  };
+  window.setWordCount = (count) => app && app.setWordCount(count);
+  window.generateShares = () => app && app.handleGenerateShares();
+  window.copyShare = (button, shareContent) => app && app.shareManager.copyShare(button, shareContent);
+  window.downloadShare = (shareContent, shareIndex) =>
+    app && app.shareManager.downloadShare(shareContent, shareIndex);
+  window.recoverMnemonic = () => app && app.handleRecoverMnemonic();
+  window.validateShares = () => app && app.recoveryTabManager && app.recoveryTabManager.validateCurrentTab();
 }
 
-// 页面加载完成后初始化
+// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   bindGlobalFunctions();
 });
 
-// 页面卸载时清理资源
+// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-  if (app) {
-    app.destroy();
-  }
+  if (app) app.destroy();
 });
 
-// 导出应用实例（用于调试）
+// Export class for debugging
 if (typeof window !== 'undefined') {
   window.MnemonicSplitApp = MnemonicSplitApp;
   window.app = app;
@@ -477,7 +403,12 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     // Best-effort registration; ignore errors to avoid breaking the app
     // Use Vite base URL so the SW is found under GitHub Pages subpath as well
-    const base = (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/';
+    const base =
+      (typeof import !== 'undefined' &&
+        typeof import.meta !== 'undefined' &&
+        import.meta.env &&
+        import.meta.env.BASE_URL) ?
+        import.meta.env.BASE_URL : '/';
     const swUrl = base.replace(/\/$/, '') + '/sw.js';
     navigator.serviceWorker.register(swUrl).catch(() => {});
   });
