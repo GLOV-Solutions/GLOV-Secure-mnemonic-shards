@@ -1,6 +1,5 @@
 /**
  * MnemonicShards - Main application file
- * Refactored main module using a componentized architecture for maintainability.
  */
 
 import { MnemonicInput } from './components/MnemonicInput.js';
@@ -11,21 +10,21 @@ import { APP_CONFIG, MNEMONIC_CONFIG, SELECTORS, CSS_CLASSES } from './constants
 import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
 
-// ✅ SLIP-39 wrapper (OpenPGP for payload; shares via SLIP-39)
+// SLIP-39 wrapper
 import {
   generateSlip39ForMnemonic,
   recoverMnemonicWithSlip39,
 } from './crypto/slip39Wrapper.js';
 
-// Polyfill for crypto.randomUUID (older engines or injected contexts)
+// Polyfill for crypto.randomUUID
 (() => {
   try {
     if (typeof crypto !== 'undefined' && !crypto.randomUUID && crypto.getRandomValues) {
       const bytes = () => {
         const a = new Uint8Array(16);
         crypto.getRandomValues(a);
-        a[6] = (a[6] & 0x0f) | 0x40; // version
-        a[8] = (a[8] & 0x3f) | 0x80; // variant
+        a[6] = (a[6] & 0x0f) | 0x40;
+        a[8] = (a[8] & 0x3f) | 0x80;
         return a;
       };
       crypto.randomUUID = () => {
@@ -40,18 +39,16 @@ import {
         );
       };
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {}
 })();
 
-/**
- * Main application class
- */
 class MnemonicSplitApp {
   constructor() {
     this.mnemonicInput = new MnemonicInput(MNEMONIC_CONFIG.DEFAULT_WORD_COUNT);
     this.shareManager = new ShareManager();
     this.recoveryTabManager = new RecoveryTabManager();
     this.currentWordCount = MNEMONIC_CONFIG.DEFAULT_WORD_COUNT;
+    this.currentFormat = 'bip39'; // 'bip39' | 'slip39'
 
     this.init();
   }
@@ -63,38 +60,45 @@ class MnemonicSplitApp {
     this.setInitialState();
     this.shareManager.initEncryptionListeners();
     i18n.init();
+
+    // default format view
+    this.setShareFormat('bip39');
   }
 
   setupEventListeners() {
-    // Word count toggles (12 / 24)
+    // Word count toggles
     const words12Btn = getElement('#words12');
     const words24Btn = getElement('#words24');
     if (words12Btn) addEvent(words12Btn, 'click', () => this.setWordCount(12));
     if (words24Btn) addEvent(words24Btn, 'click', () => this.setWordCount(24));
 
-    // Total shares change => rebuild threshold options
+    // Total shares change
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
-    if (totalSharesSelect) {
-      addEvent(totalSharesSelect, 'change', () => this.updateThresholdOptions());
-    }
+    if (totalSharesSelect) addEvent(totalSharesSelect, 'change', () => this.updateThresholdOptions());
 
-    // Generate classic Shamir shares
+    // Generate classic Shamir
     const generateBtn = getElement(SELECTORS.GENERATE_BTN);
     if (generateBtn) addEvent(generateBtn, 'click', () => this.handleGenerateShares());
 
-    // ✅ Generate SLIP-39 (IDs needed in HTML: #generateSlip39Btn, #slip39Passphrase)
+    // SLIP-39: generate
     const generateSlip39Btn = getElement('#generateSlip39Btn');
     if (generateSlip39Btn) addEvent(generateSlip39Btn, 'click', () => this.handleGenerateSlip39());
 
-    // Recover mnemonic (classic paste/files tab)
+    // Classic recover
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
     if (recoverBtn) addEvent(recoverBtn, 'click', () => this.handleRecoverMnemonic());
 
-    // ✅ Recover via SLIP-39 (IDs: #recoverSlip39Btn, #slip39MnemonicsInput, #slip39Ciphertext, #slip39PassphraseRecover)
+    // SLIP-39 recover
     const recoverSlip39Btn = getElement('#recoverSlip39Btn');
     if (recoverSlip39Btn) addEvent(recoverSlip39Btn, 'click', () => this.handleRecoverSlip39());
 
-    // Recover textarea live validation
+    // Share format toggle
+    const btnBip = getElement('#formatBip39');
+    const btnSlip = getElement('#formatSlip39');
+    if (btnBip) addEvent(btnBip, 'click', () => this.setShareFormat('bip39'));
+    if (btnSlip) addEvent(btnSlip, 'click', () => this.setShareFormat('slip39'));
+
+    // Live validation in classic paste tab
     const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
     if (recoverInput) {
       addEvent(recoverInput, 'input', () => {
@@ -124,20 +128,17 @@ class MnemonicSplitApp {
       });
     }
 
-    // Keyboard shortcuts
+    // Shortcuts
     addEvent(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
   }
 
   setupLanguageSwitcher() {
     const langButtons = document.querySelectorAll('.language-btn');
-
     langButtons.forEach((button) => {
       const lang = button.getAttribute('data-lang');
       addEvent(button, 'click', (e) => {
         e.preventDefault();
-        if (lang === LANGUAGES.EN || lang === LANGUAGES.FR) {
-          this.switchLanguage(lang);
-        }
+        if (lang === LANGUAGES.EN || lang === LANGUAGES.FR) this.switchLanguage(lang);
       });
     });
 
@@ -149,9 +150,7 @@ class MnemonicSplitApp {
     this.updateLanguageUI(i18n.getCurrentLanguage());
   }
 
-  switchLanguage(language) {
-    i18n.setLanguage(language);
-  }
+  switchLanguage(language) { i18n.setLanguage(language); }
 
   updateLanguageUI(language) {
     const langButtons = document.querySelectorAll('.language-btn');
@@ -240,15 +239,37 @@ class MnemonicSplitApp {
     }
   }
 
-  /** Read current BIP-39 phrase as a single string */
+  // ===== Share format toggle =====
+  setShareFormat(fmt) {
+    if (fmt !== 'bip39' && fmt !== 'slip39') return;
+    this.currentFormat = fmt;
+
+    // Buttons state
+    const btnBip = getElement('#formatBip39');
+    const btnSlip = getElement('#formatSlip39');
+    if (btnBip) btnBip.classList.toggle('active', fmt === 'bip39');
+    if (btnSlip) btnSlip.classList.toggle('active', fmt === 'slip39');
+
+    // Panels visibility
+    const pBip = getElement('#modeBip39');
+    const pSlip = getElement('#modeSlip39');
+    if (pBip) pBip.style.display = fmt === 'bip39' ? '' : 'none';
+    if (pSlip) pSlip.style.display = fmt === 'slip39' ? '' : 'none';
+  }
+
+  // Utility
   getCurrentBip39Phrase() {
     const validation = this.mnemonicInput.validateAllInputs();
     if (!validation.isValid) return { ok: false, validation };
     return { ok: true, phrase: validation.words.join(' ') };
   }
 
-  /** Classic Shamir flow */
+  // Classic Shamir generate
   async handleGenerateShares() {
+    if (this.currentFormat !== 'bip39') {
+      // ignore if user is on SLIP-39 mode
+      return;
+    }
     const validation = this.mnemonicInput.validateAllInputs();
     if (!validation.isValid) {
       if (validation.hasEmpty) {
@@ -269,8 +290,10 @@ class MnemonicSplitApp {
     if (success) this.scrollToResult();
   }
 
-  /** ✅ SLIP-39 generation: outputs OpenPGP ciphertext + SLIP-39 mnemonics */
+  // SLIP-39 generate
   async handleGenerateSlip39() {
+    if (this.currentFormat !== 'slip39') return;
+
     try {
       const bip39 = this.getCurrentBip39Phrase();
       if (!bip39.ok) {
@@ -315,8 +338,9 @@ class MnemonicSplitApp {
     }
   }
 
-  /** Classic Shamir recovery (paste/files) */
+  // Classic Shamir recover
   async handleRecoverMnemonic() {
+    if (this.currentFormat !== 'bip39') return;
     try {
       const shares = this.recoveryTabManager.getCurrentShares();
       const encryptionPassword = this.recoveryTabManager.getEncryptionPassword();
@@ -345,8 +369,9 @@ class MnemonicSplitApp {
     }
   }
 
-  /** ✅ SLIP-39 recovery (mnemonics + OpenPGP ciphertext) */
+  // SLIP-39 recover
   async handleRecoverSlip39() {
+    if (this.currentFormat !== 'slip39') return;
     const btn = getElement('#recoverSlip39Btn');
     try {
       const mnemsEl = getElement('#slip39MnemonicsInput');
@@ -386,10 +411,7 @@ class MnemonicSplitApp {
     } catch (err) {
       this.shareManager.showError(i18n.t('errors.recoveryFailed') + (err?.message || String(err)));
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = i18n.t('recoverBtn');
-      }
+      if (btn) { btn.disabled = false; btn.textContent = i18n.t('recoverBtn'); }
     }
   }
 
@@ -402,6 +424,13 @@ class MnemonicSplitApp {
   }
 
   scrollToResult() {
+    // Prefer visible panel’s result block
+    const slipPanelVisible = getElement('#modeSlip39')?.style.display !== 'none';
+    if (slipPanelVisible) {
+      const out = getElement('#slip39ResultCiphertext') || getElement('#recoverResult');
+      if (out) out.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const resultDiv = getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
     if (resultDiv) resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -409,13 +438,24 @@ class MnemonicSplitApp {
   handleKeyboardShortcuts(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
-      const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
-      const isActiveInRecover = recoverInput && document.activeElement === recoverInput;
-      const recoverBtnEl = getElement(SELECTORS.RECOVER_BTN);
-      if (isActiveInRecover && recoverBtnEl && !recoverBtnEl.disabled) {
-        this.handleRecoverMnemonic();
-      } else if (!isActiveInRecover) {
-        this.handleGenerateShares();
+      if (this.currentFormat === 'bip39') {
+        const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
+        const isActiveInRecover = recoverInput && document.activeElement === recoverInput;
+        const recoverBtnEl = getElement(SELECTORS.RECOVER_BTN);
+        if (isActiveInRecover && recoverBtnEl && !recoverBtnEl.disabled) {
+          this.handleRecoverMnemonic();
+        } else if (!isActiveInRecover) {
+          this.handleGenerateShares();
+        }
+      } else {
+        // In SLIP-39 mode, default to generate if focus is not in SLIP-39 inputs
+        const inSlipInputs =
+          document.activeElement === getElement('#slip39MnemonicsInput') ||
+          document.activeElement === getElement('#slip39Ciphertext') ||
+          document.activeElement === getElement('#slip39Passphrase') ||
+          document.activeElement === getElement('#slip39PassphraseRecover');
+        if (inSlipInputs) this.handleRecoverSlip39();
+        else this.handleGenerateSlip39();
       }
     }
     if (e.key === 'Escape') this.shareManager.hideAllAlerts();
@@ -427,6 +467,7 @@ class MnemonicSplitApp {
       description: APP_CONFIG.DESCRIPTION,
       version: APP_CONFIG.VERSION,
       currentWordCount: this.currentWordCount,
+      currentFormat: this.currentFormat,
     };
   }
 
@@ -451,8 +492,6 @@ function bindGlobalFunctions() {
   window.downloadShare = (shareContent, shareIndex) => app && app.shareManager.downloadShare(shareContent, shareIndex);
   window.recoverMnemonic = () => app && app.handleRecoverMnemonic();
   window.validateShares = () => app && app.recoveryTabManager && app.recoveryTabManager.validateCurrentTab();
-
-  // ✅ expose SLIP-39 helpers if you need them globally
   window.generateSlip39 = () => app && app.handleGenerateSlip39();
   window.recoverSlip39 = () => app && app.handleRecoverSlip39();
 }
@@ -469,7 +508,7 @@ if (typeof window !== 'undefined') {
   window.app = app;
 }
 
-// Register service worker
+// Service worker
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)

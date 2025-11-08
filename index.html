@@ -7,16 +7,13 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    <!-- Favicon: served from /public/favicon.ico -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-
     <title>GLOV Secure — Mnemonic Shards (Offline Shamir & Optional SLIP-39)</title>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <!-- Company logo (offline local asset) -->
         <a href="https://glov-solutions.com/" target="_blank" rel="noopener" class="logo-link">
           <img
             src="/assets/glov-secure-logo.png"
@@ -27,7 +24,6 @@
           />
         </a>
 
-        <!-- Language Switcher (client-side only, no network calls) -->
         <div class="language-switcher">
           <span class="language-switcher-label" data-i18n="language">Language</span>
           <div class="language-toggle">
@@ -36,25 +32,10 @@
           </div>
         </div>
 
-        <!-- External links: GLOV Solutions website & repository -->
         <nav class="top-links" aria-label="External links">
-          <a
-            class="top-link"
-            href="https://glov-solutions.com/"
-            target="_blank"
-            rel="noopener"
-            title="GLOV Solutions — Official Website"
-            >GLOV Solutions</a
-          >
+          <a class="top-link" href="https://glov-solutions.com/" target="_blank" rel="noopener">GLOV Solutions</a>
           <span class="sep">•</span>
-          <a
-            class="top-link"
-            href="https://github.com/GLOV-Solutions/GLOV-Secure-mnemonic-shards"
-            target="_blank"
-            rel="noopener"
-            title="GLOV Secure — Mnemonic Shards repository"
-            >GitHub Repo</a
-          >
+          <a class="top-link" href="https://github.com/GLOV-Solutions/GLOV-Secure-mnemonic-shards" target="_blank" rel="noopener">GitHub Repo</a>
         </nav>
 
         <h1>GLOV Secure — Mnemonic Shards</h1>
@@ -66,14 +47,13 @@
       </div>
 
       <div class="main-content">
-        <!-- Security notice (runs offline, recommend air-gapped usage) -->
         <div class="alert security-notice" data-i18n="securityNotice">
           <strong>Security Mode:</strong> Uses professional-grade Shamir Secret Sharing. Runs
           completely offline; no network access. For maximal security, use in an air-gapped
           environment.
         </div>
 
-        <!-- Configuration section -->
+        <!-- Configuration -->
         <div class="section">
           <div class="section-title" data-i18n="configTitle">Configuration Options</div>
 
@@ -84,12 +64,14 @@
                 <button id="formatBip39" class="active" data-format="bip39">BIP-39 (Shamir)</button>
                 <button id="formatSlip39" data-format="slip39">SLIP-39</button>
               </div>
+              <small class="help" data-i18n="shareFormatHelp">
+                Choose Shamir (machine-encoded shares) or SLIP-39 (human-readable share mnemonics).
+              </small>
             </div>
 
             <div class="control-group">
               <label data-i18n="wordCountLabel">Mnemonic Word Count</label>
               <div class="btn-group" id="wordCountButtons">
-                <!-- Removed inline handlers: JS attaches listeners -->
                 <button id="words12" class="active" data-i18n="words12">12 words</button>
                 <button id="words24" data-i18n="words24">24 words</button>
               </div>
@@ -118,255 +100,252 @@
           </div>
         </div>
 
-        <!-- Mnemonic input section -->
-        <div class="section">
-          <div class="section-title" data-i18n="inputTitle">Enter Mnemonic Phrase</div>
+        <!-- ==================== BIP-39 / SHAMIR MODE ==================== -->
+        <div id="modeBip39" class="mode-panel">
+          <!-- Mnemonic input -->
+          <div class="section">
+            <div class="section-title" data-i18n="inputTitle">Enter Mnemonic Phrase</div>
 
-          <div id="inputErrorAlert" style="display: none" class="alert alert-error">
-            <!-- BIP-39 validation errors will appear here -->
-          </div>
+            <div id="inputErrorAlert" style="display: none" class="alert alert-error"></div>
+            <div id="duplicateAlert" style="display: none" class="alert alert-warning"></div>
+            <div id="generalErrorAlert" style="display: none" class="alert alert-error"></div>
+            <div id="successAlert" style="display: none" class="alert alert-success"></div>
 
-          <div id="duplicateAlert" style="display: none" class="alert alert-warning">
-            <!-- Duplicate word warnings will appear here -->
-          </div>
+            <div class="words-grid" id="wordsGrid"></div>
 
-          <div id="generalErrorAlert" style="display: none" class="alert alert-error">
-            <!-- Generic errors will appear here -->
-          </div>
-
-          <div id="successAlert" style="display: none" class="alert alert-success">
-            <!-- Success messages will appear here -->
-          </div>
-
-          <div class="words-grid" id="wordsGrid">
-            <!-- Inputs are generated dynamically -->
-          </div>
-
-          <!-- Removed inline onclick; JS attaches listener -->
-          <button class="action-btn" id="generateBtn" data-i18n="generateBtn">
-            Generate Shares
-          </button>
-        </div>
-
-        <!-- Generated shares result section -->
-        <div id="sharesResult" style="display: none">
-          <div class="section-title" data-i18n="sharesTitle">Generated Shares</div>
-
-          <!-- Encryption options (OpenPGP) -->
-          <div class="encryption-section" id="encryptionSection">
-            <div class="section-subtitle" data-i18n="encryption.title">Encryption Options</div>
-            <div class="alert alert-info" data-i18n="encryption.encryptionDescription">
-              Add an extra layer of security by encrypting each shard in OpenPGP format, compatible
-              with GPG tools.
-            </div>
-
-            <div class="encryption-controls">
-              <div class="control-group">
-                <label class="checkbox-container">
-                  <input type="checkbox" id="enableEncryption" />
-                  <span class="checkmark"></span>
-                  <span data-i18n="encryption.enableEncryption">Enable Encryption</span>
-                </label>
-              </div>
-
-              <div id="encryptionFields" class="encryption-fields" style="display: none">
-                <div class="control-group">
-                  <label for="encryptionPassword" data-i18n="encryption.passwordLabel">Password</label>
-                  <input
-                    type="password"
-                    id="encryptionPassword"
-                    class="password-input"
-                    data-i18n-placeholder="encryption.passwordPlaceholder"
-                    placeholder="Enter encryption password"
-                  />
-                  <div class="password-strength" id="passwordStrength"></div>
-                </div>
-
-                <div class="control-group">
-                  <label for="confirmPassword" data-i18n="encryption.confirmPasswordLabel"
-                    >Confirm Password</label
-                  >
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    class="password-input"
-                    data-i18n-placeholder="encryption.confirmPasswordPlaceholder"
-                    placeholder="Confirm encryption password"
-                  />
-                  <div class="password-match" id="passwordMatch"></div>
-                </div>
-
-                <div class="alert alert-warning" data-i18n="encryption.passwordTip">
-                  <strong>Important:</strong> Remember this password — it will be required to recover
-                  the mnemonic.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="alert alert-info" data-i18n="securityTip">
-            <strong>Security Tip:</strong> Store these shards in different secure locations. Any
-            <span id="thresholdDisplay"></span> shares can recover the complete mnemonic.
-          </div>
-          <div id="sharesList"></div>
-        </div>
-
-        <!-- Recovery section -->
-        <div class="section recover-section">
-          <div class="section-title" data-i18n="recoverTitle">Recover Mnemonic Phrase</div>
-
-          <!-- Tabs for recovery input -->
-          <div class="recovery-tabs">
-            <button class="tab-btn active" id="pasteTabBtn" data-tab="paste" data-i18n="pasteInputTab">
-              Paste Input
-            </button>
-            <button class="tab-btn" id="uploadTabBtn" data-tab="upload" data-i18n="fileUploadTab">
-              File Upload
+            <button class="action-btn" id="generateBtn" data-i18n="generateBtn">
+              Generate Shares
             </button>
           </div>
 
-          <!-- Tab content -->
-          <div class="tab-content">
-            <!-- Paste input tab -->
-            <div class="tab-pane active" id="pasteTab">
-              <div class="alert alert-info" data-i18n="recoverInstructions">
-                <strong>Instructions:</strong><br />
-                1. Paste each shard into the text box below, one shard per line<br />
-                2. Shard format should be a complete Base64 string (or the app’s exported format)<br />
-                3. Minimum threshold must be reached for recovery<br />
-                4. Extra shards will be ignored automatically
+          <!-- Generated shares -->
+          <div id="sharesResult" style="display: none">
+            <div class="section-title" data-i18n="sharesTitle">Generated Shares</div>
+
+            <!-- Encryption options -->
+            <div class="encryption-section" id="encryptionSection">
+              <div class="section-subtitle" data-i18n="encryption.title">Encryption Options</div>
+              <div class="alert alert-info" data-i18n="encryption.encryptionDescription">
+                Add an extra layer of security by encrypting each shard in OpenPGP format, compatible
+                with GPG tools.
               </div>
 
-              <div class="input-status" id="inputStatus">
-                <span class="status-text" data-i18n="waitingForInput">Waiting for shard input...</span>
-              </div>
-
-              <textarea
-                class="recover-input"
-                id="recoverInput"
-                rows="8"
-                wrap="soft"
-                data-i18n-placeholder="recoverPlaceholder"
-                placeholder="Paste shard contents here, one shard per line...
-
-💡 Tip: Paste multiple shards at once; the app will handle line breaks automatically.
-
-Example format:
-eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
-eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjIsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
-eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9"
-                spellcheck="false"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-              ></textarea>
-
-              <!-- Paste-input recovery result -->
-              <div id="pasteRecoverResult" class="recover-result-section"></div>
-            </div>
-
-            <!-- File upload tab -->
-            <div class="tab-pane" id="uploadTab">
-              <div class="alert alert-info" data-i18n="uploadInstructions">
-                <strong>Instructions:</strong><br />
-                1. Drag and drop shard files here or click to select files<br />
-                2. Supported formats: .txt (standard shares) and .gpg (encrypted shares)<br />
-                3. You can select multiple files at once<br />
-                4. Files will be processed immediately after upload
-              </div>
-
-              <!-- Drag-and-drop upload area -->
-              <div class="upload-area" id="uploadArea">
-                <div class="upload-content">
-                  <div class="upload-icon">📁</div>
-                  <div class="upload-text">
-                    <p data-i18n="dragDropHint">Drag and drop files here or click to select</p>
-                    <p class="upload-hint" data-i18n="supportedFormats">Supported formats: .txt, .gpg</p>
-                  </div>
-                  <button class="upload-btn" id="selectFilesBtn" data-i18n="selectFiles">Select Files</button>
-                  <input type="file" id="fileInput" multiple accept=".txt,.gpg" style="display: none" />
-                </div>
-              </div>
-
-              <!-- Encrypted files: password input -->
-              <div class="encryption-password-section" id="encryptionPasswordSection" style="display: none">
-                <div class="encryption-password-header">
-                  <h4 data-i18n="encryptionPasswordTitle">Decryption Password</h4>
-                  <p class="encryption-password-desc" data-i18n="encryptionPasswordDesc">
-                    Enter the password to decrypt your encrypted files (.gpg). All encrypted files will
-                    use the same password.
-                  </p>
+              <div class="encryption-controls">
+                <div class="control-group">
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="enableEncryption" />
+                    <span class="checkmark"></span>
+                    <span data-i18n="encryption.enableEncryption">Enable Encryption</span>
+                  </label>
                 </div>
 
-                <div class="encryption-password-input-group">
-                  <label for="uploadEncryptionPassword" data-i18n="encryption.passwordLabel">Password</label>
-                  <div class="password-input-wrapper">
+                <div id="encryptionFields" class="encryption-fields" style="display: none">
+                  <div class="control-group">
+                    <label for="encryptionPassword" data-i18n="encryption.passwordLabel">Password</label>
                     <input
                       type="password"
-                      id="uploadEncryptionPassword"
+                      id="encryptionPassword"
                       class="password-input"
                       data-i18n-placeholder="encryption.passwordPlaceholder"
-                      placeholder="Enter decryption password"
-                      autocomplete="new-password"
+                      placeholder="Enter encryption password"
                     />
-                    <button
-                      type="button"
-                      class="password-toggle-btn"
-                      id="uploadPasswordToggleBtn"
-                      title="Toggle password visibility"
-                    >
-                      <span class="password-toggle-icon">Show</span>
-                    </button>
+                    <div class="password-strength" id="passwordStrength"></div>
+                  </div>
+
+                  <div class="control-group">
+                    <label for="confirmPassword" data-i18n="encryption.confirmPasswordLabel">Confirm Password</label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      class="password-input"
+                      data-i18n-placeholder="encryption.confirmPasswordPlaceholder"
+                      placeholder="Confirm encryption password"
+                    />
+                    <div class="password-match" id="passwordMatch"></div>
+                  </div>
+
+                  <div class="alert alert-warning" data-i18n="encryption.passwordTip">
+                    <strong>Important:</strong> Remember this password — it will be required to recover
+                    the mnemonic.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-info" data-i18n="securityTip">
+              <strong>Security Tip:</strong> Store these shards in different secure locations. Any
+              <span id="thresholdDisplay"></span> shares can recover the complete mnemonic.
+            </div>
+            <div id="sharesList"></div>
+          </div>
+
+          <!-- Recovery (classic Shamir) -->
+          <div class="section recover-section">
+            <div class="section-title" data-i18n="recoverTitle">Recover Mnemonic Phrase</div>
+
+            <div class="recovery-tabs">
+              <button class="tab-btn active" id="pasteTabBtn" data-tab="paste" data-i18n="pasteInputTab">Paste Input</button>
+              <button class="tab-btn" id="uploadTabBtn" data-tab="upload" data-i18n="fileUploadTab">File Upload</button>
+            </div>
+
+            <div class="tab-content">
+              <div class="tab-pane active" id="pasteTab">
+                <div class="alert alert-info" data-i18n="recoverInstructions">
+                  <strong>Instructions:</strong><br />
+                  1. Paste each shard into the text box below, one shard per line<br />
+                  2. Shard format should be a complete Base64 string (or the app’s exported format)<br />
+                  3. Minimum threshold must be reached for recovery<br />
+                  4. Extra shards will be ignored automatically
+                </div>
+
+                <div class="input-status" id="inputStatus">
+                  <span class="status-text" data-i18n="waitingForInput">Waiting for shard input...</span>
+                </div>
+
+                <textarea
+                  class="recover-input"
+                  id="recoverInput"
+                  rows="8"
+                  wrap="soft"
+                  data-i18n-placeholder="recoverPlaceholder"
+                  placeholder="Paste shard contents here, one shard per line…"
+                  spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+                ></textarea>
+
+                <div id="pasteRecoverResult" class="recover-result-section"></div>
+              </div>
+
+              <div class="tab-pane" id="uploadTab">
+                <div class="alert alert-info" data-i18n="uploadInstructions">
+                  <strong>Instructions:</strong><br />
+                  1. Drag and drop shard files here or click to select files<br />
+                  2. Supported formats: .txt (standard shares) and .gpg (encrypted shares)<br />
+                  3. You can select multiple files at once<br />
+                  4. Files will be processed immediately after upload
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                  <div class="upload-content">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                      <p data-i18n="dragDropHint">Drag and drop files here or click to select</p>
+                      <p class="upload-hint" data-i18n="supportedFormats">Supported formats: .txt, .gpg</p>
+                    </div>
+                    <button class="upload-btn" id="selectFilesBtn" data-i18n="selectFiles">Select Files</button>
+                    <input type="file" id="fileInput" multiple accept=".txt,.gpg" style="display: none" />
                   </div>
                 </div>
 
-                <div class="encryption-password-actions">
-                  <button class="btn btn-secondary" id="skipDecryptionBtn" data-i18n="skipDecryption">
-                    Skip Decryption
-                  </button>
-                  <button class="btn btn-primary" id="applyDecryptionBtn" data-i18n="applyDecryption">
-                    Apply Decryption
-                  </button>
+                <div class="encryption-password-section" id="encryptionPasswordSection" style="display: none">
+                  <div class="encryption-password-header">
+                    <h4 data-i18n="encryptionPasswordTitle">Decryption Password</h4>
+                    <p class="encryption-password-desc" data-i18n="encryptionPasswordDesc">
+                      Enter the password to decrypt your encrypted files (.gpg). All encrypted files will
+                      use the same password.
+                    </p>
+                  </div>
+
+                  <div class="encryption-password-input-group">
+                    <label for="uploadEncryptionPassword" data-i18n="encryption.passwordLabel">Password</label>
+                    <div class="password-input-wrapper">
+                      <input
+                        type="password" id="uploadEncryptionPassword" class="password-input"
+                        data-i18n-placeholder="encryption.passwordPlaceholder"
+                        placeholder="Enter decryption password" autocomplete="new-password"
+                      />
+                      <button type="button" class="password-toggle-btn" id="uploadPasswordToggleBtn" title="Toggle password visibility">
+                        <span class="password-toggle-icon">Show</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="encryption-password-actions">
+                    <button class="btn btn-secondary" id="skipDecryptionBtn" data-i18n="skipDecryption">Skip Decryption</button>
+                    <button class="btn btn-primary" id="applyDecryptionBtn" data-i18n="applyDecryption">Apply Decryption</button>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Uploaded files list -->
-              <div class="uploaded-files" id="uploadedFiles" style="display: none">
-                <div class="files-header">
-                  <h4 data-i18n="uploadedFiles">Uploaded Files</h4>
-                  <button class="clear-files-btn" id="clearFilesBtn" data-i18n="clearAllFiles">Clear All</button>
+                <div class="uploaded-files" id="uploadedFiles" style="display: none">
+                  <div class="files-header">
+                    <h4 data-i18n="uploadedFiles">Uploaded Files</h4>
+                    <button class="clear-files-btn" id="clearFilesBtn" data-i18n="clearAllFiles">Clear All</button>
+                  </div>
+                  <div class="files-list" id="filesList"></div>
                 </div>
-                <div class="files-list" id="filesList"></div>
-              </div>
 
-              <!-- Upload status -->
-              <div class="upload-status" id="uploadStatus">
-                <span class="status-text" data-i18n="waitingForUpload">Waiting for file upload...</span>
-              </div>
+                <div class="upload-status" id="uploadStatus">
+                  <span class="status-text" data-i18n="waitingForUpload">Waiting for file upload...</span>
+                </div>
 
-              <!-- File-upload recovery result -->
-              <div id="uploadRecoverResult" class="recover-result-section"></div>
+                <div id="uploadRecoverResult" class="recover-result-section"></div>
+              </div>
             </div>
+
+            <button class="action-btn" id="recoverBtn" disabled data-i18n="recoverBtn">Recover Mnemonic</button>
+            <div id="recoverResult"></div>
+          </div>
+        </div>
+
+        <!-- ==================== SLIP-39 MODE ==================== -->
+        <div id="modeSlip39" class="mode-panel" style="display:none">
+          <!-- Input reused: same words grid from above (we keep it visible by design) -->
+          <div class="section">
+            <div class="section-title">SLIP-39 — Generate Share Mnemonics & Envelope</div>
+            <div class="alert alert-info">
+              This will produce a set of <strong>SLIP-39 share mnemonics</strong> and an
+              <strong>OpenPGP-armored ciphertext</strong> of your BIP-39 phrase. Store both safely.
+            </div>
+
+            <div class="control-group">
+              <label for="slip39Passphrase">Optional SLIP-39 passphrase (salt)</label>
+              <input type="password" id="slip39Passphrase" class="password-input" placeholder="(Optional) SLIP-39 passphrase" />
+            </div>
+
+            <button class="action-btn" id="generateSlip39Btn">Generate SLIP-39 Set</button>
           </div>
 
-          <button class="action-btn" id="recoverBtn" disabled data-i18n="recoverBtn">Recover Mnemonic</button>
+          <div class="section">
+            <div class="section-subtitle">Ciphertext (OpenPGP armored)</div>
+            <pre id="slip39ResultCiphertext" class="cipher-output" style="white-space:pre-wrap"></pre>
 
-          <div id="recoverResult"></div>
+            <div class="section-subtitle" style="margin-top:16px">SLIP-39 Share Mnemonics</div>
+            <ol id="slip39ResultMnemonics" class="slip39-list"></ol>
+          </div>
+
+          <div class="section">
+            <div class="section-title">SLIP-39 — Recover BIP-39</div>
+            <div class="alert alert-info">
+              Paste at least <em>threshold</em> SLIP-39 mnemonics (one per line) and the matching
+              OpenPGP ciphertext. If a SLIP-39 passphrase was used during generation, enter it too.
+            </div>
+
+            <div class="control-group">
+              <label for="slip39MnemonicsInput">Share mnemonics (one per line)</label>
+              <textarea id="slip39MnemonicsInput" rows="6" spellcheck="false"></textarea>
+            </div>
+
+            <div class="control-group">
+              <label for="slip39Ciphertext">OpenPGP armored ciphertext</label>
+              <textarea id="slip39Ciphertext" rows="6" spellcheck="false"></textarea>
+            </div>
+
+            <div class="control-group">
+              <label for="slip39PassphraseRecover">SLIP-39 passphrase (if used)</label>
+              <input type="password" id="slip39PassphraseRecover" class="password-input" placeholder="Enter SLIP-39 passphrase if you used one" />
+            </div>
+
+            <button class="action-btn" id="recoverSlip39Btn">Recover BIP-39</button>
+
+            <div id="recoverResult" style="margin-top:12px"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Footer: external links + build hash placeholder (to be populated by app or static text) -->
       <footer class="footer">
-        <!-- Note: this is static markup; you can inject the SHA-256 build hash into this span if desired -->
         <p class="footer-links">
           <a href="https://glov-solutions.com/" target="_blank" rel="noopener">GLOV Solutions</a>
           <span class="sep">•</span>
-          <a
-            href="https://github.com/GLOV-Solutions/GLOV-Secure-mnemonic-shards"
-            target="_blank"
-            rel="noopener"
-            >GitHub Repo</a
-          >
+          <a href="https://github.com/GLOV-Solutions/GLOV-Secure-mnemonic-shards" target="_blank" rel="noopener">GitHub Repo</a>
         </p>
         <p class="footer-hash">
           <small>Build: <span id="buildHash">SHA-256 available in VERSION.txt</span></small>
@@ -374,7 +353,6 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
       </footer>
     </div>
 
-    <!-- Only module scripts; no inline JS to satisfy CSP -->
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
