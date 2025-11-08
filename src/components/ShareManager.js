@@ -463,12 +463,12 @@ export class ShareManager {
       }
 
       // Prefer passing string shares; fallback to bytes if needed
-      const shareStrings = validShareData.slice(0, threshold).map((data) => atob(data.data));
+      const sharePayloadStrings = validShareData.slice(0, threshold).map((data) => atob(data.data));
       let combined;
       try {
-        combined = await combine(shareStrings);
+        combined = await combine(sharePayloadStrings);
       } catch (_) {
-        const shareBytes = shareStrings.map((bin) => {
+        const shareBytes = sharePayloadStrings.map((bin) => {
           const bytes = new Uint8Array(bin.length);
           for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
           return bytes;
