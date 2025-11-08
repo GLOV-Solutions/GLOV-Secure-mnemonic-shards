@@ -61,7 +61,7 @@ class MnemonicSplitApp {
     this.shareManager.initEncryptionListeners();
     i18n.init();
 
-    // default format view
+    // Vue par défaut
     this.setShareFormat('bip39');
   }
 
@@ -250,7 +250,7 @@ class MnemonicSplitApp {
     if (btnBip) btnBip.classList.toggle('active', fmt === 'bip39');
     if (btnSlip) btnSlip.classList.toggle('active', fmt === 'slip39');
 
-    // Panels visibility
+    // Panels visibility (si vous avez deux panneaux dédiés)
     const pBip = getElement('#modeBip39');
     const pSlip = getElement('#modeSlip39');
     if (pBip) pBip.style.display = fmt === 'bip39' ? '' : 'none';
@@ -266,10 +266,8 @@ class MnemonicSplitApp {
 
   // Classic Shamir generate
   async handleGenerateShares() {
-    if (this.currentFormat !== 'bip39') {
-      // ignore if user is on SLIP-39 mode
-      return;
-    }
+    if (this.currentFormat !== 'bip39') return;
+
     const validation = this.mnemonicInput.validateAllInputs();
     if (!validation.isValid) {
       if (validation.hasEmpty) {
@@ -422,7 +420,6 @@ class MnemonicSplitApp {
   }
 
   scrollToResult() {
-    // Prefer visible panel’s result block
     const slipPanelVisible = getElement('#modeSlip39')?.style.display !== 'none';
     if (slipPanelVisible) {
       const out = getElement('#slip39ResultCiphertext') || getElement('#recoverResult');
@@ -446,7 +443,6 @@ class MnemonicSplitApp {
           this.handleGenerateShares();
         }
       } else {
-        // In SLIP-39 mode, default to generate if focus is not in SLIP-39 inputs
         const inSlipInputs =
           document.activeElement === getElement('#slip39MnemonicsInput') ||
           document.activeElement === getElement('#slip39Ciphertext') ||

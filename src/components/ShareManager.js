@@ -22,9 +22,7 @@ export class ShareManager {
     this.encryptedShares = [];              // reserved; not used with streaming download
   }
 
-  /**
-   * Initialize encryption-related listeners (UI)
-   */
+  /** Initialize encryption-related listeners (UI) */
   initEncryptionListeners() {
     const enableEncryptionCheckbox = getElement(SELECTORS.ENABLE_ENCRYPTION);
     const encryptionFields = getElement(SELECTORS.ENCRYPTION_FIELDS);
@@ -137,7 +135,9 @@ export class ShareManager {
    */
   async generateShares(words, totalShares, threshold) {
     try {
-      const validation = validateMnemonic(words);
+      // ✅ FIX: validate against a STRING, not an array
+      const mnemonic = words.join(' ');
+      const validation = validateMnemonic(mnemonic);
       if (!validation.isValid) {
         this.showError(validation.errors[0]);
         return false;
@@ -149,7 +149,7 @@ export class ShareManager {
         return false;
       }
 
-      const mnemonic = words.join(' ');
+      // Split the mnemonic bytes
       const secretBytes = new TextEncoder().encode(mnemonic);
       const rawShares = await split(secretBytes, totalShares, threshold);
 
@@ -196,12 +196,7 @@ export class ShareManager {
     toggleElement(resultDiv, true);
   }
 
-  /**
-   * Create a share item block
-   * @param {string} share
-   * @param {number} index
-   * @returns {HTMLElement}
-   */
+  /** Create a share item block */
   createShareItem(share, index) {
     const shareItem = createElement('div', ['share-item']);
 
@@ -240,9 +235,7 @@ export class ShareManager {
     return shareItem;
   }
 
-  /**
-   * Copy a single share
-   */
+  /** Copy a single share */
   async copyShare(button, shareContent, shareIndex) {
     const success = await copyToClipboard(shareContent);
     if (success) {
@@ -254,9 +247,7 @@ export class ShareManager {
     }
   }
 
-  /**
-   * Download a share (optionally encrypt on the fly)
-   */
+  /** Download a share (optionally encrypt on the fly) */
   async downloadShare(shareContent, shareIndex) {
     try {
       const enc = this.validateEncryptionSettings();
@@ -314,9 +305,7 @@ export class ShareManager {
     return content;
   }
 
-  /**
-   * Live validation of pasted shares (classic flow)
-   */
+  /** Live validation of pasted shares (classic flow) */
   validateShareInput() {
     const input = getElement(SELECTORS.RECOVER_INPUT);
     const statusDiv = getElement(SELECTORS.INPUT_STATUS);
@@ -345,11 +334,10 @@ export class ShareManager {
     const validation = validateShareCollection(shareStrings);
 
     if (!validation.isValid) {
-      // Handle duplicate index if the validator exposes it; be robust to i18n
       const hasDuplicate =
         (validation.errors && validation.errors.some((e) =>
           String(e).toLowerCase().includes('duplicate')
-          || String(e).includes('重复') // fallback if upstream still uses Chinese
+          || String(e).includes('重复')
         )) || validation.duplicateIndexDetected;
 
       if (validation.validCount === 0) {
@@ -411,7 +399,6 @@ export class ShareManager {
       }
 
       if (validShareData.length === 0 && maybeEncrypted) {
-        // Ask for password via modal and attempt decryption
         let password = '';
         let isRetry = false;
 
@@ -486,8 +473,6 @@ export class ShareManager {
 
   /**
    * Recover from programmatic shares array (classic Shamir path)
-   * @param {Array} shares
-   * @param {string} encryptionPassword (unused; kept for backward compat)
    */
   async recoverMnemonicWithShares(shares, encryptionPassword) {
     const resultDiv = getElement(SELECTORS.RECOVER_RESULT);
