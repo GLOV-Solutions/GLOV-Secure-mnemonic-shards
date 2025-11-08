@@ -85,7 +85,7 @@
 .bg-secure-btn { background-color: #00584a; }
 .secure-hero {
   height: 100vh;
-  background: url('/images/projects/glovfond-secure.png') no-repeat center center/cover;
+  background: url('/assets/glovfond-secure.png') no-repeat center center/cover;
   color: #ffffff;
 }
 .text-secure { color: #1dd3c0; }
