@@ -1344,7 +1344,7 @@ select:hover {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
   font-size: var(--font-size-base);
   font-weight: 600;
-  background: #f8f9fa;
+  background: #001713;
   color: var(--color-text);
   padding: var(--space-md);
   border-radius: var(--radius-md);
