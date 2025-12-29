@@ -5,9 +5,19 @@
 
 import { getElement, createElement, toggleElement, toggleClass, setHTML, clearElement, addEvent } from '../utils/dom.js';
 import { validateShareCollection } from '../utils/validation.js';
-import { validatePasswordMatch, decryptWithPassword, detectGpgFormat } from '../utils/encryption.js';
+import { decryptWithPassword, detectGpgFormat } from '../utils/encryption.js';
 import { t } from '../utils/i18n.js';
 import { passwordDialog } from './PasswordDialog.js';
+
+function canUseWebCrypto() {
+  return (
+    typeof window !== 'undefined' &&
+    window.isSecureContext === true &&
+    typeof globalThis !== 'undefined' &&
+    !!globalThis.crypto &&
+    !!globalThis.crypto.subtle
+  );
+}
 
 export class RecoveryTabManager {
   constructor() {
@@ -23,6 +33,9 @@ export class RecoveryTabManager {
     this.uploadPassword = ''; // decryption password for uploaded files
     this.passwordVisible = false; // whether password field is visible
 
+    // NEW: cache capability
+    this.webCryptoAvailable = canUseWebCrypto();
+
     this.init();
   }
 
@@ -34,6 +47,11 @@ export class RecoveryTabManager {
     this.setupFileUpload();
     this.setupDragAndDrop();
     this.setupEncryptionPassword();
+
+    // NEW: If WebCrypto is not available, make sure password UI is hidden
+    if (!this.webCryptoAvailable) {
+      this.togglePasswordSection(false);
+    }
   }
 
   /**
@@ -47,7 +65,6 @@ export class RecoveryTabManager {
 
     if (!pasteTabBtn || !uploadTabBtn || !pasteTab || !uploadTab) return;
 
-    // Tab button handlers
     addEvent(pasteTabBtn, 'click', () => this.switchTab('paste'));
     addEvent(uploadTabBtn, 'click', () => this.switchTab('upload'));
   }
@@ -64,15 +81,12 @@ export class RecoveryTabManager {
     const pasteTab = getElement('#pasteTab');
     const uploadTab = getElement('#uploadTab');
 
-    // Update button state
     toggleClass(pasteTabBtn, 'active', tabType === 'paste');
     toggleClass(uploadTabBtn, 'active', tabType === 'upload');
 
-    // Update content visibility
     toggleClass(pasteTab, 'active', tabType === 'paste');
     toggleClass(uploadTab, 'active', tabType === 'upload');
 
-    // Clear previous tab result area
     if (this.activeTab === 'paste') {
       const pasteResultDiv = getElement('#pasteRecoverResult');
       if (pasteResultDiv) setHTML(pasteResultDiv, '');
@@ -97,15 +111,12 @@ export class RecoveryTabManager {
 
     if (!selectFilesBtn || !fileInput) return;
 
-    // Open file selector
     addEvent(selectFilesBtn, 'click', () => fileInput.click());
 
-    // On file chosen
     addEvent(fileInput, 'change', (e) => {
       this.handleFileSelect(e.target.files);
     });
 
-    // Clear files
     if (clearFilesBtn) {
       addEvent(clearFilesBtn, 'click', () => this.clearAllFiles());
     }
@@ -118,7 +129,6 @@ export class RecoveryTabManager {
     const uploadArea = getElement('#uploadArea');
     if (!uploadArea) return;
 
-    // Prevent default browser behavior
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
       addEvent(uploadArea, eventName, (e) => {
         e.preventDefault();
@@ -126,19 +136,16 @@ export class RecoveryTabManager {
       });
     });
 
-    // Visual feedback on drag over
     ['dragenter', 'dragover'].forEach((eventName) => {
       addEvent(uploadArea, eventName, () => {
         toggleClass(uploadArea, 'drag-over', true);
       });
     });
 
-    // Remove feedback when leaving
     addEvent(uploadArea, 'dragleave', () => {
       toggleClass(uploadArea, 'drag-over', false);
     });
 
-    // Handle drop
     addEvent(uploadArea, 'drop', (e) => {
       toggleClass(uploadArea, 'drag-over', false);
       this.handleFileSelect(e.dataTransfer.files);
@@ -159,6 +166,34 @@ export class RecoveryTabManager {
     // Check if any are encrypted
     this.hasEncryptedFiles = validFiles.some((file) => file.name.endsWith('.gpg'));
 
+    // NEW: If .gpg files exist but WebCrypto is not available, block them now.
+    if (this.hasEncryptedFiles && !this.webCryptoAvailable) {
+      // Filter out gpg files so txt can still work
+      const nonEncrypted = validFiles.filter((f) => !f.name.endsWith('.gpg'));
+      const blockedCount = validFiles.length - nonEncrypted.length;
+
+      if (blockedCount > 0) {
+        this.showError(
+          t('encryption.requiresHttps') ||
+            'Encrypted (.gpg) files are disabled on HTTP. Use HTTPS (secure context) to enable decryption.'
+        );
+      }
+
+      // Process only non-encrypted files (if any)
+      if (nonEncrypted.length === 0) {
+        // Ensure password UI stays hidden
+        this.togglePasswordSection(false);
+        this.updateFilesList();
+        this.validateCurrentShares();
+        return;
+      }
+
+      await this.processFiles(nonEncrypted);
+      // Ensure password UI stays hidden
+      this.togglePasswordSection(false);
+      return;
+    }
+
     // Process files
     await this.processFiles(validFiles);
 
@@ -177,7 +212,6 @@ export class RecoveryTabManager {
       await this.processFile(file);
     }
 
-    // Update UI and validate current state
     this.updateFilesList();
     this.validateCurrentShares();
   }
@@ -197,6 +231,15 @@ export class RecoveryTabManager {
 
       if (!validExtensions.includes(fileExtension)) {
         this.showError(t('errors.fileTypeNotSupported', file.name));
+        continue;
+      }
+
+      // NEW: block .gpg immediately if WebCrypto isn't available
+      if (fileExtension === '.gpg' && !this.webCryptoAvailable) {
+        this.showError(
+          t('encryption.requiresHttps') ||
+            'Encrypted (.gpg) files are disabled on HTTP. Use HTTPS (secure context) to enable decryption.'
+        );
         continue;
       }
 
@@ -222,7 +265,6 @@ export class RecoveryTabManager {
    */
   async processFile(file) {
     try {
-      // Add to uploads list
       const fileData = {
         name: file.name,
         size: file.size,
@@ -237,23 +279,19 @@ export class RecoveryTabManager {
 
       this.uploadedFiles.push(fileData);
 
-      // Read content
       const content = await this.readFileContent(file);
       fileData.content = content;
 
-      // Detect content format
       if (fileData.isEncrypted) {
         fileData.contentFormat = (content instanceof ArrayBuffer) ? 'binary' : 'text';
         fileData.status = 'encrypted';
       } else {
-        // Non-encrypted files must be text
         if (typeof content !== 'string') {
           fileData.status = 'invalid';
           return;
         }
         fileData.contentFormat = 'text';
 
-        // Parse share content
         const shareData = this.parseShareContent(content);
         if (shareData && !shareData.encrypted) {
           fileData.shareData = shareData;
@@ -270,11 +308,6 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Get password from dialog
-   * @param {boolean} isRetry
-   * @returns {Promise<string>}
-   */
   async getPasswordFromDialog(isRetry = false) {
     return await passwordDialog.show(isRetry);
   }
@@ -285,6 +318,15 @@ export class RecoveryTabManager {
    * @param {string} password
    */
   async retryDecryption(encryptedFiles, password) {
+    // NEW: hard stop if no WebCrypto
+    if (!this.webCryptoAvailable) {
+      this.showError(
+        t('encryption.requiresHttps') ||
+          'Decryption is disabled on HTTP. Use HTTPS (secure context) to enable it.'
+      );
+      return;
+    }
+
     let decryptionSuccess = false;
 
     for (const file of encryptedFiles) {
@@ -292,7 +334,6 @@ export class RecoveryTabManager {
         const decryptedContent = await decryptWithPassword(file.content, password);
         file.decryptedContent = decryptedContent;
 
-        // Parse decrypted share
         const shareData = this.parseShareContent(decryptedContent);
         if (shareData && !shareData.encrypted) {
           file.shareData = shareData;
@@ -303,24 +344,19 @@ export class RecoveryTabManager {
         }
       } catch (error) {
         file.status = 'invalid';
-        // More explicit error handling in English
         if (/invalid password|wrong password/i.test(error.message)) {
-          // Wrong password; continue with other files
+          // ignore, keep going
         } else if (/invalid format|malformed/i.test(error.message)) {
-          // Format error; mark invalid but continue
           console.warn(`File ${file.name} has invalid format:`, error.message);
         } else {
-          // Other errors
           console.warn(`File ${file.name} decryption failed:`, error.message);
         }
       }
 
-      // Update UI and validation after each file
       this.updateFilesList();
       this.validateCurrentShares();
     }
 
-    // If all failed, show a clear error message
     if (!decryptionSuccess) {
       this.showError(t('encryption.invalidPassword') || 'Invalid password or unsupported file format.');
     }
@@ -335,28 +371,38 @@ export class RecoveryTabManager {
 
     if (!statusDiv || !recoverBtn) return;
 
-    // Collect valid shares
+    // NEW: if webcrypto not available, force-hide password section
+    if (!this.webCryptoAvailable) {
+      this.togglePasswordSection(false);
+    }
+
     const allShares = this.uploadedFiles
       .filter((file) => file.status === 'valid' && file.shareData)
       .map((file) => file.shareData);
 
-    // Check for files pending decryption
     const encryptedFiles = this.uploadedFiles.filter((file) => file.status === 'encrypted');
 
-    if (allShares.length === 0 && encryptedFiles.length === 0) {
+    // NEW: if encrypted files exist but no WebCrypto, mark them invalid (defensive)
+    if (encryptedFiles.length > 0 && !this.webCryptoAvailable) {
+      encryptedFiles.forEach((f) => {
+        f.status = 'invalid';
+      });
+    }
+
+    const encryptedStillThere = this.uploadedFiles.some((f) => f.status === 'encrypted');
+
+    if (allShares.length === 0 && !encryptedStillThere) {
       this.updateStatus('invalid', t('errors.noValidShares'), statusDiv);
       recoverBtn.disabled = true;
       return;
     }
 
-    if (allShares.length === 0 && encryptedFiles.length > 0) {
+    if (allShares.length === 0 && encryptedStillThere) {
       this.updateStatus('waiting', t('encryption.passwordRequired'), statusDiv);
-      // Allow pressing Recover to trigger password dialog later
       recoverBtn.disabled = false;
       return;
     }
 
-    // Validate combined shares
     const validation = validateShareCollection(allShares);
 
     if (validation.isValid) {
@@ -374,16 +420,10 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Read file content with smart GPG handling
-   * @param {File} file
-   * @returns {Promise<string|ArrayBuffer>}
-   */
   async readFileContent(file) {
     if (file.name.endsWith('.gpg')) {
       return this.readGpgFile(file);
     } else {
-      // Plain text
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
@@ -393,34 +433,24 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Read GPG file and detect format (binary vs ASCII armor)
-   * @param {File} file
-   * @returns {Promise<string|ArrayBuffer>}
-   */
   async readGpgFile(file) {
-    // Try ArrayBuffer first
     try {
       const binaryResult = await this.readAsArrayBuffer(file);
       const format = detectGpgFormat(binaryResult);
 
-      // Binary packets -> return as-is
       if (format.type === 'binary-packet' || format.type === 'binary') {
         return binaryResult;
       }
 
-      // ASCII armor -> convert to text
       if (format.type === 'ascii-armor') {
         try {
           const textContent = new TextDecoder('utf-8', { fatal: false }).decode(binaryResult);
           return textContent;
         } catch (_decodeError) {
-          // Fallback to binary if decoding fails
           return binaryResult;
         }
       }
 
-      // Unclear: try reading as text too
       const textResult = await this.readAsText(file);
       const trimmed = textResult.trim();
 
@@ -428,25 +458,17 @@ export class RecoveryTabManager {
         return textResult;
       }
 
-      // Very short or contains control chars -> likely binary misread
       if (trimmed.length < 200 || /[\x00-\x08\x0E-\x1F\x7F]/.test(trimmed)) {
         return binaryResult;
       }
 
-      // Default to text (assume ASCII armor)
       return textResult;
     } catch (error) {
-      // If binary read fails, fallback to text
       console.warn('Binary read failed, falling back to text mode:', error);
       return this.readAsText(file);
     }
   }
 
-  /**
-   * Read file as ArrayBuffer
-   * @param {File} file
-   * @returns {Promise<ArrayBuffer>}
-   */
   readAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -456,11 +478,6 @@ export class RecoveryTabManager {
     });
   }
 
-  /**
-   * Read file as UTF-8 text
-   * @param {File} file
-   * @returns {Promise<string>}
-   */
   readAsText(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -470,32 +487,23 @@ export class RecoveryTabManager {
     });
   }
 
-  /**
-   * Parse share file content
-   * @param {string} content
-   * @returns {Object|null} shareData or { encrypted: true, content }
-   */
   parseShareContent(content) {
     try {
-      // Try single-line share first
       try {
         const trimmedContent = content.trim();
 
-        // GPG ASCII armor?
         if (trimmedContent.startsWith('-----BEGIN PGP MESSAGE-----')) {
           return { encrypted: true, content: trimmedContent };
         }
 
-        // Standard encoded share?
         const shareData = JSON.parse(atob(trimmedContent));
         if (shareData.threshold && shareData.index !== undefined && shareData.data) {
           return shareData;
         }
-      } catch (e) {
-        // Continue to multi-line attempt
+      } catch (_e) {
+        // continue
       }
 
-      // Try multi-line parsing (one share per line)
       const lines = content
         .split('\n')
         .map((line) => line.trim())
@@ -511,22 +519,17 @@ export class RecoveryTabManager {
           if (shareData.threshold && shareData.index !== undefined && shareData.data) {
             return shareData;
           }
-        } catch (e) {
-          // Keep trying next line
+        } catch (_e) {
+          // continue
         }
       }
 
-      // Fallback: treat as encrypted/unknown, return raw content
       return { encrypted: true, content: content.trim() };
     } catch (_error) {
-      // Still return something that upstream can handle
       return { encrypted: true, content: content.trim() };
     }
   }
 
-  /**
-   * Update uploaded files list UI
-   */
   updateFilesList() {
     const uploadedFiles = getElement('#uploadedFiles');
     const filesList = getElement('#filesList');
@@ -547,12 +550,6 @@ export class RecoveryTabManager {
     });
   }
 
-  /**
-   * Build single file item row
-   * @param {Object} file
-   * @param {number} index
-   * @returns {Element}
-   */
   createFileItem(file, index) {
     const fileItem = createElement('div', ['file-item']);
 
@@ -585,18 +582,12 @@ export class RecoveryTabManager {
     return fileItem;
   }
 
-  /**
-   * Human-readable file status text
-   * @param {string} status
-   * @returns {string}
-   */
   getFileStatusText(status) {
     const statusTexts = t('fileStatus');
     if (typeof statusTexts === 'object') {
       return statusTexts[status] || statusTexts.unknown;
     }
 
-    // Fallback to English
     switch (status) {
       case 'processing':
         return 'Processing...';
@@ -611,33 +602,21 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Remove file from list
-   * @param {number} index
-   */
   removeFile(index) {
     this.uploadedFiles.splice(index, 1);
     this.updateFilesList();
     this.validateCurrentTab();
   }
 
-  /**
-   * Clear all uploaded files
-   */
   clearAllFiles() {
     this.uploadedFiles = [];
     this.hasEncryptedFiles = false;
     this.uploadPassword = '';
     this.updateFilesList();
     this.validateCurrentTab();
-
-    // Hide password section
     this.togglePasswordSection(false);
   }
 
-  /**
-   * Validate active tab
-   */
   validateCurrentTab() {
     if (this.activeTab === 'paste') {
       this.validatePasteInput();
@@ -646,9 +625,6 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Validate pasted input area
-   */
   validatePasteInput() {
     const input = getElement('#recoverInput');
     const statusDiv = getElement('#inputStatus');
@@ -679,9 +655,6 @@ export class RecoveryTabManager {
     this.processValidationResult(validation, statusDiv, recoverBtn);
   }
 
-  /**
-   * Validate uploaded files tab
-   */
   validateFileUpload() {
     const statusDiv = getElement('#uploadStatus');
     const recoverBtn = getElement('#recoverBtn');
@@ -694,16 +667,9 @@ export class RecoveryTabManager {
       return;
     }
 
-    // Unified validation path
     this.validateCurrentShares();
   }
 
-  /**
-   * Process validation result
-   * @param {Object} validation
-   * @param {Element} statusDiv
-   * @param {Element} recoverBtn
-   */
   processValidationResult(validation, statusDiv, recoverBtn) {
     if (!validation.isValid) {
       if (validation.validCount === 0) {
@@ -722,23 +688,14 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Update a status area with class + message
-   * @param {string} status - 'waiting' | 'valid' | 'invalid' | 'insufficient'
-   * @param {string} message
-   * @param {Element} statusDiv
-   */
   updateStatus(status, message, statusDiv) {
     if (!statusDiv) return;
 
-    // Remove previous status classes
     statusDiv.className = statusDiv.className.replace(/\b(input|upload)-\w+\b/g, '');
 
-    // Add new status class based on the container type
     const statusClass = statusDiv.id === 'inputStatus' ? `input-${status}` : `upload-${status}`;
     toggleClass(statusDiv, statusClass, true);
 
-    // Safe DOM update (avoid XSS)
     statusDiv.innerHTML = '';
     const spanElement = document.createElement('span');
     spanElement.className = 'status-text';
@@ -746,10 +703,6 @@ export class RecoveryTabManager {
     statusDiv.appendChild(spanElement);
   }
 
-  /**
-   * Get current shares based on active tab
-   * @returns {Array}
-   */
   getCurrentShares() {
     if (this.activeTab === 'paste') {
       const input = getElement('#recoverInput');
@@ -763,25 +716,16 @@ export class RecoveryTabManager {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
     } else {
-      // Return valid share objects from uploaded files
       return this.uploadedFiles
         .filter((file) => file.status === 'valid' && file.shareData)
         .map((file) => file.shareData);
     }
   }
 
-  /**
-   * Get encryption password (deprecated, now always via dialog)
-   * @returns {string}
-   */
   getEncryptionPassword() {
     return '';
   }
 
-  /**
-   * Show a temporary error toast
-   * @param {string} message
-   */
   showError(message) {
     const errorAlert = createElement('div', ['alert', 'alert-error']);
     errorAlert.style.position = 'fixed';
@@ -800,9 +744,6 @@ export class RecoveryTabManager {
     }, 3000);
   }
 
-  /**
-   * Destroy manager state
-   */
   destroy() {
     this.uploadedFiles = [];
     this.parsedShares = [];
@@ -814,9 +755,6 @@ export class RecoveryTabManager {
     this.hasEncryptedFiles = false;
   }
 
-  /**
-   * Set up decryption password input area (upload flow)
-   */
   setupEncryptionPassword() {
     const passwordInput = getElement('#uploadEncryptionPassword');
     const passwordToggle = getElement('#uploadPasswordToggleBtn');
@@ -825,27 +763,28 @@ export class RecoveryTabManager {
 
     if (!passwordInput || !passwordToggle || !applyBtn || !skipBtn) return;
 
-    // Store password (no complexity checks here)
+    // NEW: if WebCrypto not available, disable the whole section
+    if (!this.webCryptoAvailable) {
+      toggleElement('#encryptionPasswordSection', false);
+      return;
+    }
+
     addEvent(passwordInput, 'input', () => {
       this.uploadPassword = passwordInput.value;
     });
 
-    // Toggle visibility
     addEvent(passwordToggle, 'click', () => {
       this.togglePasswordVisibility();
     });
 
-    // Apply decryption
     addEvent(applyBtn, 'click', () => {
       this.applyDecryption();
     });
 
-    // Skip decryption
     addEvent(skipBtn, 'click', () => {
       this.skipDecryption();
     });
 
-    // Enter key to apply
     addEvent(passwordInput, 'keydown', (e) => {
       if (e.key === 'Enter') {
         this.applyDecryption();
@@ -853,9 +792,6 @@ export class RecoveryTabManager {
     });
   }
 
-  /**
-   * Toggle password field visibility
-   */
   togglePasswordVisibility() {
     const passwordInput = getElement('#uploadEncryptionPassword');
     const passwordToggle = getElement('#uploadPasswordToggleBtn');
@@ -867,49 +803,41 @@ export class RecoveryTabManager {
     passwordToggle.querySelector('.password-toggle-icon').textContent = this.passwordVisible ? 'Hide' : 'Show';
   }
 
-  /**
-   * Show or hide password section near upload area
-   * @param {boolean} show
-   * @param {boolean} hasEncryptedFiles
-   */
   togglePasswordSection(show, hasEncryptedFiles = false) {
     const passwordSection = getElement('#encryptionPasswordSection');
     const uploadArea = getElement('#uploadArea');
 
     if (!passwordSection || !uploadArea) return;
 
-    if (show && hasEncryptedFiles) {
-      // Reveal password input
-      toggleElement(passwordSection, true);
+    // NEW: force-hide if no WebCrypto
+    if (!this.webCryptoAvailable) {
+      toggleElement(passwordSection, false);
+      this.removeEncryptedFilesIndicator();
+      return;
+    }
 
-      // Add encrypted files indicator
+    if (show && hasEncryptedFiles) {
+      toggleElement(passwordSection, true);
       this.addEncryptedFilesIndicator();
 
-      // Focus password input shortly after
       setTimeout(() => {
         const passwordInput = getElement('#uploadEncryptionPassword');
         if (passwordInput) passwordInput.focus();
       }, 100);
     } else {
-      // Hide password input
       toggleElement(passwordSection, false);
       this.removeEncryptedFilesIndicator();
     }
   }
 
-  /**
-   * Add a small indicator above upload area when encrypted files are detected
-   */
   addEncryptedFilesIndicator() {
     const uploadArea = getElement('#uploadArea');
     if (!uploadArea) return;
 
-    // Avoid duplicates
     if (uploadArea.querySelector('.encrypted-files-indicator')) return;
 
     const indicator = createElement('div', ['encrypted-files-indicator']);
 
-    // Safe DOM structure
     const iconSpan = document.createElement('span');
     iconSpan.className = 'icon';
     iconSpan.textContent = '🔒';
@@ -919,13 +847,9 @@ export class RecoveryTabManager {
     textSpan.textContent = t('encryption.encryptedFileDetected') || 'Encrypted file(s) detected — enter password to decrypt.';
     indicator.appendChild(textSpan);
 
-    // Insert before upload area
     uploadArea.parentNode.insertBefore(indicator, uploadArea);
   }
 
-  /**
-   * Remove encrypted files indicator
-   */
   removeEncryptedFilesIndicator() {
     const indicator = document.querySelector('.encrypted-files-indicator');
     if (indicator && indicator.parentNode) {
@@ -933,10 +857,16 @@ export class RecoveryTabManager {
     }
   }
 
-  /**
-   * Apply decryption to all encrypted files
-   */
   async applyDecryption() {
+    // NEW: hard stop if no WebCrypto
+    if (!this.webCryptoAvailable) {
+      this.showError(
+        t('encryption.requiresHttps') ||
+          'Decryption is disabled on HTTP. Use HTTPS (secure context) to enable it.'
+      );
+      return;
+    }
+
     if (!this.uploadPassword) {
       this.showError(t('encryption.passwordRequired') || 'Please enter a decryption password.');
       return;
@@ -950,14 +880,9 @@ export class RecoveryTabManager {
     }
 
     await this.retryDecryption(encryptedFiles, this.uploadPassword);
-
-    // Hide password section after attempt
     this.togglePasswordSection(false);
   }
 
-  /**
-   * Skip decryption flow and validate only plain files
-   */
   skipDecryption() {
     this.togglePasswordSection(false);
     this.validateCurrentShares();

@@ -11,11 +11,29 @@ import { APP_CONFIG, MNEMONIC_CONFIG, SELECTORS, CSS_CLASSES } from './constants
 import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
 
+/**
+ * Returns true if WebCrypto (crypto.subtle) is available in a secure context.
+ * On ESP32 served over HTTP, this is typically false.
+ */
+function canUseWebCrypto() {
+  return (
+    typeof window !== 'undefined' &&
+    window.isSecureContext === true &&
+    typeof globalThis !== 'undefined' &&
+    !!globalThis.crypto &&
+    !!globalThis.crypto.subtle
+  );
+}
+
 // Polyfill for crypto.randomUUID (older engines or injected contexts)
 // Safe v4 UUID using crypto.getRandomValues; no inline code (CSP-friendly)
 (() => {
   try {
-    if (typeof crypto !== 'undefined' && !crypto.randomUUID && crypto.getRandomValues) {
+    if (
+      typeof crypto !== 'undefined' &&
+      !crypto.randomUUID &&
+      crypto.getRandomValues // guard: only if available
+    ) {
       const bytes = () => {
         const a = new Uint8Array(16);
         crypto.getRandomValues(a);
@@ -39,7 +57,6 @@ import { LANGUAGES } from './constants/i18n.js';
   } catch (_) { /* ignore */ }
 })();
 
-
 /**
  * Main application class
  */
@@ -61,9 +78,43 @@ class MnemonicSplitApp {
     this.setupLanguageSwitcher();
     this.updateThresholdOptions();
     this.setInitialState();
-    // Initialize encryption listeners (currently a no-op placeholder)
-    this.shareManager.initEncryptionListeners();
+
+    // i18n first (so messages can be translated)
     i18n.init();
+
+    // Encryption listeners inside ShareManager (kept)
+    this.shareManager.initEncryptionListeners();
+
+    // Hard-disable encryption UI when WebCrypto isn't available (HTTP on ESP32)
+    this.disableEncryptionUIIfNeeded();
+  }
+
+  /**
+   * Disable encryption UI if WebCrypto isn't available.
+   * This prevents runtime crashes in HTTP contexts (ESP32).
+   */
+  disableEncryptionUIIfNeeded() {
+    if (canUseWebCrypto()) return;
+
+    const enableEncryptionCheckbox = getElement(SELECTORS.ENABLE_ENCRYPTION);
+    const encryptionFields = getElement(SELECTORS.ENCRYPTION_FIELDS);
+
+    if (enableEncryptionCheckbox) {
+      enableEncryptionCheckbox.checked = false;
+      enableEncryptionCheckbox.disabled = true;
+    }
+
+    if (encryptionFields) {
+      toggleElement(encryptionFields, false);
+    }
+
+    // Inform user (best-effort, doesn't break if missing translation)
+    if (this.shareManager && typeof this.shareManager.showInfo === 'function') {
+      this.shareManager.showInfo(
+        i18n.t('encryption.requiresHttps') ||
+          'Encryption is disabled on HTTP. Use HTTPS (secure context) to enable it.'
+      );
+    }
   }
 
   /**
@@ -107,7 +158,7 @@ class MnemonicSplitApp {
       });
     }
 
-    // Optional: event delegation for share action buttons to avoid any inline handlers
+    // Optional: event delegation for share action buttons
     const sharesList = getElement('#sharesList');
     if (sharesList) {
       addEvent(sharesList, 'click', (e) => {
@@ -128,7 +179,6 @@ class MnemonicSplitApp {
     addEvent(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
   }
 
-
   /**
    * Setup language switcher (EN / FR)
    */
@@ -139,35 +189,26 @@ class MnemonicSplitApp {
       const lang = button.getAttribute('data-lang');
       addEvent(button, 'click', (e) => {
         e.preventDefault();
-        // FIX: support EN and FR (not ZH)
         if (lang === LANGUAGES.EN || lang === LANGUAGES.FR) {
           this.switchLanguage(lang);
         }
       });
     });
 
-    // React to language changes
     i18n.addListener((lang) => {
       this.updateLanguageUI(lang);
       this.updateDynamicContent();
+      // Re-apply encryption UI rules after language changes (for translated message)
+      this.disableEncryptionUIIfNeeded();
     });
 
-    // Initial UI sync
     this.updateLanguageUI(i18n.getCurrentLanguage());
   }
 
-  /**
-   * Switch the app language
-   * @param {string} language - Language code
-   */
   switchLanguage(language) {
     i18n.setLanguage(language);
   }
 
-  /**
-   * Update active state on language buttons
-   * @param {string} language - Language code
-   */
   updateLanguageUI(language) {
     const langButtons = document.querySelectorAll('.language-btn');
     langButtons.forEach((button) => {
@@ -177,9 +218,6 @@ class MnemonicSplitApp {
     });
   }
 
-  /**
-   * Update UI text that depends on current language
-   */
   updateDynamicContent() {
     this.updateThresholdOptions();
     this.updateTotalSharesOptions();
@@ -187,9 +225,6 @@ class MnemonicSplitApp {
     this.updateWordInputPlaceholders();
   }
 
-  /**
-   * Rebuild "total shares" select with translated labels
-   */
   updateTotalSharesOptions() {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     if (!totalSharesSelect) return;
@@ -207,9 +242,6 @@ class MnemonicSplitApp {
     });
   }
 
-  /**
-   * Refresh placeholders that use i18n keys
-   */
   updatePlaceholders() {
     const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
     if (recoverInput) {
@@ -218,9 +250,6 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Clear placeholders for mnemonic inputs (visual consistency)
-   */
   updateWordInputPlaceholders() {
     for (let i = 1; i <= this.currentWordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
@@ -228,20 +257,12 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Set initial UI state
-   */
   setInitialState() {
     this.updateWordCountButtons();
-    // Render word inputs for the initial word count
     this.mnemonicInput.renderInputs();
     this.shareManager.hideAllAlerts();
   }
 
-  /**
-   * Change mnemonic word count (12/24)
-   * @param {number} count - Number of words
-   */
   setWordCount(count) {
     if (!MNEMONIC_CONFIG.WORD_COUNTS.includes(count)) return;
 
@@ -251,9 +272,6 @@ class MnemonicSplitApp {
     this.shareManager.hideAllAlerts();
   }
 
-  /**
-   * Toggle active state for 12/24 buttons
-   */
   updateWordCountButtons() {
     const words12Btn = getElement('#words12');
     const words24Btn = getElement('#words24');
@@ -261,9 +279,6 @@ class MnemonicSplitApp {
     if (words24Btn) toggleClass(words24Btn, CSS_CLASSES.ACTIVE, this.currentWordCount === 24);
   }
 
-  /**
-   * Rebuild threshold select to reflect current total shares
-   */
   updateThresholdOptions() {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     const thresholdSelect = getElement(SELECTORS.THRESHOLD);
@@ -282,9 +297,6 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Generate shard set from the current mnemonic
-   */
   async handleGenerateShares() {
     const validation = this.mnemonicInput.validateAllInputs();
     if (!validation.isValid) {
@@ -300,17 +312,10 @@ class MnemonicSplitApp {
     const totalShares = parseInt(getElement(SELECTORS.TOTAL_SHARES).value, 10);
     const threshold = parseInt(getElement(SELECTORS.THRESHOLD).value, 10);
 
-    const success = await this.shareManager.generateShares(
-      validation.words,
-      totalShares,
-      threshold
-    );
+    const success = await this.shareManager.generateShares(validation.words, totalShares, threshold);
     if (success) this.scrollToResult();
   }
 
-  /**
-   * Recover mnemonic from provided shards (paste or file upload)
-   */
   async handleRecoverMnemonic() {
     try {
       const shares = this.recoveryTabManager.getCurrentShares();
@@ -340,11 +345,6 @@ class MnemonicSplitApp {
     }
   }
 
-
-  /**
-   * Focus the first invalid word input
-   * @param {number} index - 1-based input index
-   */
   focusInvalidInput(index) {
     const input = getElement(SELECTORS.WORD_INPUT(index));
     if (input) {
@@ -353,25 +353,15 @@ class MnemonicSplitApp {
     }
   }
 
-  /**
-   * Smooth-scroll to the result section
-   */
   scrollToResult() {
-    const resultDiv =
-      getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
+    const resultDiv = getElement(SELECTORS.SHARES_RESULT) || getElement(SELECTORS.RECOVER_RESULT);
     if (resultDiv) resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  /**
-   * Global keyboard shortcuts
-   * @param {KeyboardEvent} e - Keyboard event
-   */
   handleKeyboardShortcuts(e) {
-    // Ctrl/Cmd + Enter: generate or recover
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
 
-      const recoverSection = getElement('.recover-section');
       const recoverInput = getElement(SELECTORS.RECOVER_INPUT);
       const isActiveInRecover = recoverInput && document.activeElement === recoverInput;
 
@@ -383,16 +373,11 @@ class MnemonicSplitApp {
       }
     }
 
-    // ESC: clear all alerts
     if (e.key === 'Escape') {
       this.shareManager.hideAllAlerts();
     }
   }
 
-  /**
-   * Expose app info (useful for diagnostics)
-   * @returns {Object} Application metadata
-   */
   getAppInfo() {
     return {
       name: APP_CONFIG.NAME,
@@ -402,9 +387,6 @@ class MnemonicSplitApp {
     };
   }
 
-  /**
-   * Cleanup resources on teardown
-   */
   destroy() {
     this.mnemonicInput.destroy();
     this.shareManager.destroy();
@@ -415,9 +397,6 @@ class MnemonicSplitApp {
 // Global app instance
 let app;
 
-/**
- * Bootstrap the application
- */
 function initApp() {
   try {
     app = new MnemonicSplitApp();
@@ -426,46 +405,33 @@ function initApp() {
   }
 }
 
-/**
- * Bind safe functions to window for inline handlers
- */
 function bindGlobalFunctions() {
   window.setWordCount = (count) => app && app.setWordCount(count);
   window.generateShares = () => app && app.handleGenerateShares();
   window.copyShare = (button, shareContent) => app && app.shareManager.copyShare(button, shareContent);
-  window.downloadShare = (shareContent, shareIndex) =>
-    app && app.shareManager.downloadShare(shareContent, shareIndex);
+  window.downloadShare = (shareContent, shareIndex) => app && app.shareManager.downloadShare(shareContent, shareIndex);
   window.recoverMnemonic = () => app && app.handleRecoverMnemonic();
   window.validateShares = () => app && app.recoveryTabManager && app.recoveryTabManager.validateCurrentTab();
 }
 
-// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   bindGlobalFunctions();
 });
 
-// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
   if (app) app.destroy();
 });
 
-// Export class for debugging
 if (typeof window !== 'undefined') {
   window.MnemonicSplitApp = MnemonicSplitApp;
   window.app = app;
 }
 
-// Register the service worker on window load (if supported)
-// - Ensures offline caching for same-origin assets via public/sw.js
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Best-effort registration; ignore errors to avoid breaking the app
-    // Use Vite's BASE_URL if available (e.g., GitHub Pages subpath)
     const base =
-      (typeof import.meta !== 'undefined' &&
-       import.meta.env &&
-       import.meta.env.BASE_URL)
+      (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
         ? import.meta.env.BASE_URL
         : '/';
     const swUrl = base.replace(/\/$/, '') + '/sw.js';

@@ -217,6 +217,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
         'This encrypted shard can be decrypted using GPG command: gpg --decrypt shard1.gpg',
       encryptedFileDetected: 'Encrypted files detected. Password is required for decryption.',
       noEncryptedFiles: 'No encrypted files to decrypt',
+      requiresHttps: 'Encrypted (.gpg) files are disabled on HTTP. Use HTTPS (secure context) to enable decryption.',
     },
 
     // Password dialog
@@ -420,6 +421,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
         'Ce fragment chiffré peut être déchiffré avec la commande GPG : gpg --decrypt shard1.gpg',
       encryptedFileDetected: 'Fichiers chiffrés détectés. Mot de passe requis pour le déchiffrement.',
       noEncryptedFiles: 'Aucun fichier chiffré à déchiffrer',
+      requiresHttps: 'Les fichiers chiffrés (.gpg) sont désactivés en HTTP. Utilise HTTPS (contexte sécurisé) pour activer le déchiffrement.',
     },
 
     passwordDialog: {

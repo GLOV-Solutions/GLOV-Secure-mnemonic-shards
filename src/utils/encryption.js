@@ -4,6 +4,10 @@
  */
 
 import * as openpgp from 'openpgp';
+import { canUseWebCrypto } from './security.js';
+
+const WEBCRYPTO_REQUIRED_ERROR =
+  'Encryption is disabled because WebCrypto is not available (HTTPS / secure context required).';
 
 /**
  * Encrypt text symmetrically using a password
@@ -14,6 +18,9 @@ import * as openpgp from 'openpgp';
  * @throws {Error} - Throws if encryption fails
  */
 export async function encryptWithPassword(plaintext, password) {
+  if (!canUseWebCrypto()) {
+    throw new Error(WEBCRYPTO_REQUIRED_ERROR);
+  }
   try {
     if (!plaintext || typeof plaintext !== 'string') {
       throw new Error('Plaintext must be a non-empty string.');
@@ -53,6 +60,9 @@ export async function encryptWithPassword(plaintext, password) {
  * @throws {Error} - Throws if decryption fails or password is incorrect
  */
 export async function decryptWithPassword(encryptedData, password) {
+    if (!canUseWebCrypto()) {
+    throw new Error(WEBCRYPTO_REQUIRED_ERROR);
+  }
   try {
     if (!encryptedData) {
       throw new Error('Encrypted data cannot be empty.');
@@ -255,6 +265,11 @@ export function validatePasswordMatch(password, confirmPassword) {
  * @returns {string} - Generated password
  */
 export function generateRandomPassword(length = 16, options = {}) {
+  // If WebCrypto isn't available, either throw or fallback to a weaker generator.
+  // For a seed tool, better to throw and explain than silently weaken security.
+  if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
+    throw new Error('Secure random is not available. Use HTTPS / secure context.');
+  }
   const { includeUppercase = true, includeLowercase = true, includeNumbers = true, includeSpecialChars = true } = options;
 
   let charset = '';
