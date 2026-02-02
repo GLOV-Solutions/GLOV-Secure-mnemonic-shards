@@ -1,20 +1,21 @@
 // vite.config.js
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  base: '/', // OK si tu sers à la racine (ton IP/domaine)
+export default defineConfig(({ mode }) => ({
+  base: '/',
   build: {
-    outDir: 'dist',
-    target: 'es2020',                 // moderne, compatible WebCrypto côté navigateur
-    modulePreload: { polyfill: false }, // évite le petit polyfill inline
-    assetsInlineLimit: 0,               // n’inline rien (images, fonts, etc.)
-    cssCodeSplit: true,                 // CSS séparé
-    // rollupOptions: { output: { manualChunks: undefined } } // inutile: défaut
-    sourcemap: false,                   // optionnel, évite une fuite d'infos en prod
-    minify: 'esbuild',                  // défaut, ici explicité
-  },
-  optimizeDeps: {
-    include: ['slip39', 'openpgp', 'shamir-secret-sharing'], // utile en dev
-  },
-});
-
+    modulePreload: { polyfill: false },
+    assetsInlineLimit: 0,
+    cssCodeSplit: true,
+    rollupOptions: { output: { manualChunks: undefined } },
+    minify: mode === 'production' ? 'terser' : 'esbuild',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        passes: 2
+      },
+      format: { comments: false }
+    }
+  }
+}));

@@ -1,12 +1,12 @@
 /**
- * 验证工具函数
+ * Validation utility functions
  */
 
 /**
- * 验证是否为有效的 BIP39 单词
- * @param {string[]} wordList - BIP39单词列表
- * @param {string} word - 要验证的单词
- * @returns {boolean} 是否为有效单词
+ * Validate if a word is a valid BIP39 word
+ * @param {string[]} wordList - BIP39 word list
+ * @param {string} word - Word to validate
+ * @returns {boolean} True if valid, false otherwise
  */
 export function isValidBIP39Word(wordList, word) {
   if (!word || typeof word !== 'string' || word.trim().length === 0) {
@@ -16,9 +16,9 @@ export function isValidBIP39Word(wordList, word) {
 }
 
 /**
- * 验证分片数据格式
- * @param {string} shareString - Base64编码的分片字符串
- * @returns {boolean} 是否为有效格式
+ * Validate shard data format
+ * @param {string} shareString - Base64-encoded shard string
+ * @returns {boolean} True if valid format
  */
 export function isValidShareFormat(shareString) {
   if (!shareString || typeof shareString !== 'string') {
@@ -27,18 +27,18 @@ export function isValidShareFormat(shareString) {
 
   try {
     const shareData = JSON.parse(atob(shareString.trim()));
-    // 只检查必要字段（threshold、index、data），允许额外字段存在
+    // Check only required fields (threshold, index, data); allow extra fields
     const hasRequiredFields = !!(shareData.threshold && shareData.index && shareData.data);
     return hasRequiredFields;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
 /**
- * 解析分片数据
- * @param {string} shareString - Base64编码的分片字符串
- * @returns {Object|null} 解析后的分片数据或null
+ * Parse shard data
+ * @param {string} shareString - Base64-encoded shard string
+ * @returns {Object|null} Parsed shard data or null if invalid
  */
 export function parseShareData(shareString) {
   if (!isValidShareFormat(shareString)) {
@@ -49,27 +49,27 @@ export function parseShareData(shareString) {
     const decoded = atob(shareString.trim());
     const parsed = JSON.parse(decoded);
     return parsed;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
 /**
- * 验证助记词完整性
- * @param {string[]} words - 助记词数组
- * @returns {Object} 验证结果 { isValid: boolean, errors: string[] }
+ * Validate mnemonic phrase integrity
+ * @param {string[]} words - Array of mnemonic words
+ * @returns {Object} Result { isValid: boolean, errors: string[], duplicates: string[] }
  */
 export function validateMnemonic(words) {
   const errors = [];
   const wordSet = new Set();
   const duplicates = new Set();
 
-  // 检查空单词
+  // Check for empty words
   if (words.some((word) => !word || word.trim().length === 0)) {
-    errors.push('存在空单词，请填写所有助记词');
+    errors.push('Empty words detected — please fill in all mnemonic fields.');
   }
 
-  // 检查重复单词
+  // Check for duplicate words
   words.forEach((word) => {
     const trimmedWord = word.trim().toLowerCase();
     if (wordSet.has(trimmedWord)) {
@@ -81,7 +81,7 @@ export function validateMnemonic(words) {
 
   if (duplicates.size > 0) {
     const duplicateWords = Array.from(duplicates).join(', ');
-    errors.push(`检测到重复单词：${duplicateWords}`);
+    errors.push(`Duplicate words detected: ${duplicateWords}`);
   }
 
   return {
@@ -92,9 +92,9 @@ export function validateMnemonic(words) {
 }
 
 /**
- * 验证分片集合
- * @param {string[]|Object[]} shareStrings - 分片字符串数组或分片对象数组
- * @returns {Object} 验证结果 { isValid: boolean, validCount: number, threshold: number, errors: string[] }
+ * Validate a collection of shards
+ * @param {string[]|Object[]} shareStrings - Array of Base64 strings or shard objects
+ * @returns {Object} Result { isValid, validCount, threshold, errors, shareIndices }
  */
 export function validateShareCollection(shareStrings) {
   const errors = [];
@@ -107,38 +107,36 @@ export function validateShareCollection(shareStrings) {
   shareStrings.forEach((shareStr, index) => {
     let shareData = null;
 
-    // 如果已经是对象，直接使用
+    // If already an object, use it directly
     if (typeof shareStr === 'object' && shareStr !== null) {
       shareData = shareStr;
     } else {
-      // 否则尝试解析字符串
+      // Otherwise, try parsing the string
       shareData = parseShareData(shareStr);
     }
 
     if (shareData && shareData.threshold && shareData.index !== undefined && shareData.data) {
       validCount++;
       validShareData.push(shareData);
-      // 收集所有可能的阈值
       if (shareData.threshold) {
         thresholdCandidates.add(shareData.threshold);
       }
       shareIndices.add(shareData.index);
     } else {
-      errors.push(`第 ${index + 1} 行：无效的分片格式`);
+      errors.push(`Line ${index + 1}: Invalid shard format`);
     }
   });
 
-  // 确定最终阈值：优先使用第一个有效分片的阈值
+  // Determine the final threshold (use first valid shard’s threshold by default)
   if (validShareData.length > 0 && validShareData[0].threshold) {
     threshold = validShareData[0].threshold;
   } else if (thresholdCandidates.size > 0) {
-    // 如果第一个分片没有阈值，使用最常见的阈值
+    // If the first shard has no threshold, use the most frequent one
     const thresholdCounts = {};
     thresholdCandidates.forEach((t) => {
       thresholdCounts[t] = (thresholdCounts[t] || 0) + 1;
     });
 
-    // 找出出现次数最多的阈值
     let maxCount = 0;
     thresholdCandidates.forEach((t) => {
       if (thresholdCounts[t] > maxCount) {
@@ -147,29 +145,27 @@ export function validateShareCollection(shareStrings) {
       }
     });
   } else {
-    // 如果没有检测到有效阈值，使用默认值
+    // Default fallback
     threshold = 3;
   }
 
-  // 检查是否有足够的有效分片
+  // Check if there are enough valid shards
   if (validCount === 0) {
-    errors.push('未检测到有效分片');
+    errors.push('No valid shards detected.');
   } else if (validCount < threshold) {
-    errors.push(`需要至少 ${threshold} 个分片，当前只有 ${validCount} 个`);
+    errors.push(`At least ${threshold} shards are required — only ${validCount} provided.`);
   }
 
-  // 检查是否有重复的分片索引
+  // Check for duplicate shard indices
   if (shareIndices.size !== validCount) {
-    errors.push('检测到重复的分片索引');
+    errors.push('Duplicate shard indices detected.');
   }
 
-  const result = {
+  return {
     isValid: errors.length === 0 && validCount >= threshold,
     validCount,
     threshold,
     errors,
     shareIndices: Array.from(shareIndices),
   };
-
-  return result;
 }

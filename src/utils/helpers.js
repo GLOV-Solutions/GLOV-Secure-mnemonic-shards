@@ -1,12 +1,12 @@
 /**
- * 通用工具函数
+ * General utility functions
  */
 
 /**
- * 防抖函数
- * @param {Function} func - 要防抖的函数
- * @param {number} delay - 延迟时间（毫秒）
- * @returns {Function} 防抖后的函数
+ * Debounce function
+ * @param {Function} func - Function to debounce
+ * @param {number} delay - Delay time in milliseconds
+ * @returns {Function} Debounced function
  */
 export function debounce(func, delay) {
   let timeoutId;
@@ -17,10 +17,10 @@ export function debounce(func, delay) {
 }
 
 /**
- * 节流函数
- * @param {Function} func - 要节流的函数
- * @param {number} delay - 延迟时间（毫秒）
- * @returns {Function} 节流后的函数
+ * Throttle function
+ * @param {Function} func - Function to throttle
+ * @param {number} delay - Delay time in milliseconds
+ * @returns {Function} Throttled function
  */
 export function throttle(func, delay) {
   let lastCall = 0;
@@ -34,43 +34,43 @@ export function throttle(func, delay) {
 }
 
 /**
- * 延迟执行
- * @param {number} ms - 延迟时间（毫秒）
- * @returns {Promise} Promise对象
+ * Delay execution
+ * @param {number} ms - Delay time in milliseconds
+ * @returns {Promise} Promise that resolves after the delay
  */
 export function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * 格式化日期时间
- * @param {Date} date - 日期对象
- * @returns {string} 格式化的日期时间字符串
+ * Format date and time
+ * @param {Date} date - Date object
+ * @returns {string} Formatted date-time string
  */
 export function formatDateTime(date = new Date()) {
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleString('en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   });
 }
 
 /**
- * 生成唯一ID
- * @param {string} [prefix] - 前缀
- * @returns {string} 唯一ID
+ * Generate a unique ID
+ * @param {string} [prefix] - Optional prefix
+ * @returns {string} Unique ID string
  */
 export function generateId(prefix = 'id') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**
- * 深拷贝对象
- * @param {any} obj - 要拷贝的对象
- * @returns {any} 拷贝后的对象
+ * Deep clone an object
+ * @param {any} obj - Object to clone
+ * @returns {any} Cloned object
  */
 export function deepClone(obj) {
   if (obj === null || typeof obj !== 'object') {
@@ -81,13 +81,13 @@ export function deepClone(obj) {
     return new Date(obj.getTime());
   }
 
-  if (obj instanceof Array) {
-    return obj.map(item => deepClone(item));
+  if (Array.isArray(obj)) {
+    return obj.map((item) => deepClone(item));
   }
 
   if (typeof obj === 'object') {
     const cloned = {};
-    Object.keys(obj).forEach(key => {
+    Object.keys(obj).forEach((key) => {
       cloned[key] = deepClone(obj[key]);
     });
     return cloned;
@@ -97,31 +97,31 @@ export function deepClone(obj) {
 }
 
 /**
- * 安全的JSON解析
- * @param {string} str - JSON字符串
- * @param {any} [defaultValue] - 默认值
- * @returns {any} 解析后的对象或默认值
+ * Safely parse JSON
+ * @param {string} str - JSON string
+ * @param {any} [defaultValue] - Default value to return on failure
+ * @returns {any} Parsed object or default value
  */
 export function safeJSONParse(str, defaultValue = null) {
   try {
     return JSON.parse(str);
-  } catch (error) {
+  } catch {
     return defaultValue;
   }
 }
 
 /**
- * 检查是否为移动设备
- * @returns {boolean} 是否为移动设备
+ * Check if the device is mobile
+ * @returns {boolean} True if on a mobile device
  */
 export function isMobile() {
   return window.innerWidth <= 768;
 }
 
 /**
- * 复制文本到剪贴板
- * @param {string} text - 要复制的文本
- * @returns {Promise<boolean>} 是否复制成功
+ * Copy text to clipboard
+ * @param {string} text - Text to copy
+ * @returns {Promise<boolean>} True if successful
  */
 export async function copyToClipboard(text) {
   try {
@@ -129,7 +129,7 @@ export async function copyToClipboard(text) {
       await navigator.clipboard.writeText(text);
       return true;
     } else {
-      // 降级方案
+      // Fallback for insecure contexts
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
@@ -140,16 +140,16 @@ export async function copyToClipboard(text) {
       document.body.removeChild(textArea);
       return successful;
     }
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
 /**
- * 下载文件
- * @param {string} content - 文件内容
- * @param {string} filename - 文件名
- * @param {string} [mimeType='text/plain'] - MIME类型
+ * Download a file
+ * @param {string} content - File content
+ * @param {string} filename - File name
+ * @param {string} [mimeType='text/plain'] - MIME type
  */
 export function downloadFile(content, filename, mimeType = 'text/plain') {
   try {
@@ -163,46 +163,46 @@ export function downloadFile(content, filename, mimeType = 'text/plain') {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
 /**
- * Base64编码字符串
- * @param {string} str - 要编码的字符串
- * @returns {string} Base64编码后的字符串
+ * Encode a string in Base64
+ * @param {string} str - String to encode
+ * @returns {string} Base64 encoded string
  */
 export function base64Encode(str) {
   try {
     return btoa(unescape(encodeURIComponent(str)));
-  } catch (error) {
+  } catch {
     return '';
   }
 }
 
 /**
- * Base64解码字符串
- * @param {string} str - Base64编码的字符串
- * @returns {string} 解码后的字符串
+ * Decode a Base64 string
+ * @param {string} str - Base64 encoded string
+ * @returns {string} Decoded string
  */
 export function base64Decode(str) {
   try {
     return decodeURIComponent(escape(atob(str)));
-  } catch (error) {
+  } catch {
     return '';
   }
 }
 
 /**
- * 数组去重
- * @param {Array} array - 要去重的数组
- * @param {Function} [keyFn] - 提取唯一键的函数
- * @returns {Array} 去重后的数组
+ * Remove duplicate items from an array
+ * @param {Array} array - Array to deduplicate
+ * @param {Function} [keyFn] - Function to extract a unique key for comparison
+ * @returns {Array} Deduplicated array
  */
-export function uniqueArray(array, keyFn = item => item) {
+export function uniqueArray(array, keyFn = (item) => item) {
   const seen = new Set();
-  return array.filter(item => {
+  return array.filter((item) => {
     const key = keyFn(item);
     if (seen.has(key)) {
       return false;

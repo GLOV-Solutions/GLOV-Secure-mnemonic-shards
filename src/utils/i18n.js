@@ -1,6 +1,6 @@
 /**
- * 国际化管理器
- * 处理语言切换和文本翻译
+ * Internationalization (i18n) Manager
+ * Handles language switching and text translation
  */
 
 import {
@@ -11,7 +11,7 @@ import {
 } from '../constants/i18n.js';
 
 /**
- * 国际化管理器类
+ * Internationalization Manager class
  */
 export class I18nManager {
   constructor() {
@@ -20,8 +20,8 @@ export class I18nManager {
   }
 
   /**
-   * 从本地存储加载语言偏好
-   * @returns {string} 语言代码
+   * Load language preference from local storage
+   * @returns {string} Language code
    */
   loadLanguageFromStorage() {
     try {
@@ -32,28 +32,28 @@ export class I18nManager {
   }
 
   /**
-   * 保存语言偏好到本地存储
-   * @param {string} language - 语言代码
+   * Save language preference to local storage
+   * @param {string} language - Language code
    */
   saveLanguageToStorage(language) {
     try {
       localStorage.setItem('mnemonicShards_language', language);
     } catch {
-      // 静默处理存储失败
+      // Silently ignore storage errors
     }
   }
 
   /**
-   * 获取当前语言
-   * @returns {string} 当前语言代码
+   * Get current language code
+   * @returns {string} Current language
    */
   getCurrentLanguage() {
     return this.currentLanguage;
   }
 
   /**
-   * 设置当前语言
-   * @param {string} language - 语言代码
+   * Set the current language
+   * @param {string} language - Language code
    */
   setLanguage(language) {
     if (!Object.values(LANGUAGES).includes(language)) {
@@ -68,10 +68,10 @@ export class I18nManager {
   }
 
   /**
-   * 获取翻译文本
-   * @param {string} key - 翻译键
-   * @param {...any} params - 参数（用于函数类型的翻译）
-   * @returns {string} 翻译后的文本
+   * Translate a key
+   * @param {string} key - Translation key
+   * @param {...any} params - Parameters for interpolated translations
+   * @returns {string} Translated text
    */
   t(key, ...params) {
     const translations = TRANSLATIONS[this.currentLanguage];
@@ -82,7 +82,7 @@ export class I18nManager {
     }
 
     if (translation === undefined) {
-      // 回退到英文
+      // Fallback to English
       const fallback = this.getNestedValue(TRANSLATIONS[LANGUAGES.EN], key);
       if (typeof fallback === 'function') {
         return fallback(...params);
@@ -94,10 +94,10 @@ export class I18nManager {
   }
 
   /**
-   * 获取嵌套对象的值
-   * @param {object} obj - 目标对象
-   * @param {string} path - 路径（如 'errors.fillAllWords'）
-   * @returns {any} 值
+   * Safely get a nested value from an object
+   * @param {object} obj - Target object
+   * @param {string} path - Path (e.g. "errors.fillAllWords")
+   * @returns {any} Value if found, otherwise undefined
    */
   getNestedValue(obj, path) {
     return path.split('.').reduce((current, key) => {
@@ -106,16 +106,16 @@ export class I18nManager {
   }
 
   /**
-   * 添加语言变化监听器
-   * @param {Function} listener - 监听器函数
+   * Add a listener for language changes
+   * @param {Function} listener - Listener callback
    */
   addListener(listener) {
     this.listeners.push(listener);
   }
 
   /**
-   * 移除语言变化监听器
-   * @param {Function} listener - 监听器函数
+   * Remove a listener
+   * @param {Function} listener - Listener callback
    */
   removeListener(listener) {
     const index = this.listeners.indexOf(listener);
@@ -125,20 +125,20 @@ export class I18nManager {
   }
 
   /**
-   * 通知所有监听器
+   * Notify all listeners of a language change
    */
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(this.currentLanguage);
-      } catch (error) {
+      } catch {
         // Silently handle listener errors
       }
     });
   }
 
   /**
-   * 更新页面语言属性
+   * Update the <html> lang attribute
    */
   updatePageLanguage() {
     const htmlElement = document.documentElement;
@@ -146,12 +146,12 @@ export class I18nManager {
   }
 
   /**
-   * 更新所有带有 data-i18n 属性的元素
+   * Update all elements with data-i18n attributes
    */
   updateAllElements() {
     const elements = document.querySelectorAll('[data-i18n]');
 
-    elements.forEach(element => {
+    elements.forEach((element) => {
       const key = element.getAttribute('data-i18n');
       const translation = this.t(key);
 
@@ -166,9 +166,9 @@ export class I18nManager {
       }
     });
 
-    // 更新所有带有 data-i18n-placeholder 的元素
+    // Update elements with data-i18n-placeholder
     const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
-    placeholderElements.forEach(element => {
+    placeholderElements.forEach((element) => {
       const key = element.getAttribute('data-i18n-placeholder');
       const translation = this.t(key);
       element.placeholder = translation;
@@ -176,15 +176,15 @@ export class I18nManager {
   }
 
   /**
-   * 切换到指定语言
-   * @param {string} language - 语言代码
+   * Switch to a specific language
+   * @param {string} language - Language code
    */
   switchTo(language) {
     this.setLanguage(language);
   }
 
   /**
-   * 切换语言（在当前两种语言间切换）
+   * Toggle between available languages
    */
   toggleLanguage() {
     const newLanguage = this.currentLanguage === LANGUAGES.EN ? LANGUAGES.ZH : LANGUAGES.EN;
@@ -192,19 +192,19 @@ export class I18nManager {
   }
 
   /**
-   * 获取所有可用语言
-   * @returns {Array} 语言选项数组
+   * Get all available languages
+   * @returns {Array} Array of language options
    */
   getAvailableLanguages() {
-    return Object.values(LANGUAGES).map(code => ({
+    return Object.values(LANGUAGES).map((code) => ({
       code,
       name: LANGUAGE_NAMES[code],
-      isCurrent: code === this.currentLanguage
+      isCurrent: code === this.currentLanguage,
     }));
   }
 
   /**
-   * 初始化国际化
+   * Initialize i18n system
    */
   init() {
     this.updatePageLanguage();
@@ -212,10 +212,10 @@ export class I18nManager {
   }
 }
 
-// 创建全局国际化实例
+// Create a global instance
 export const i18n = new I18nManager();
 
-// 导出便捷函数
+// Export helper functions
 export const t = (key, ...params) => i18n.t(key, ...params);
 export const setLanguage = (language) => i18n.setLanguage(language);
 export const getCurrentLanguage = () => i18n.getCurrentLanguage();

@@ -340,7 +340,7 @@ export class MnemonicInput {
     const mobileStyles = {
       fontSize: '14px',
       padding: '8px 14px',
-      background: '#6fa8dc',
+      background: '#00584a',
       color: 'white',
       borderRadius: '20px',
       border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -356,7 +356,7 @@ export class MnemonicInput {
       color: 'white',
       fontWeight: '500',
       borderRadius: '6px',
-      background: '#6fa8dc',
+      background: '#00584a',
     };
 
     Object.assign(item.style, mobile ? mobileStyles : desktopStyles);

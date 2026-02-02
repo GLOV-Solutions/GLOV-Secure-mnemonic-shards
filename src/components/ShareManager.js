@@ -1,11 +1,11 @@
 /**
- * Share Manager
- * Handles shard generation, display, copy, download, and recovery.
+ * Share manager component
+ * Responsible for generating shares, displaying them, copying, and downloading
  */
 
 import { split, combine } from 'shamir-secret-sharing';
 import { getElement, createElement, toggleElement, toggleClass, setHTML, clearElement, addEvent } from '../utils/dom.js';
-import { copyToClipboard, downloadFile, formatDateTime } from '../utils/helpers.js';
+import { copyToClipboard, downloadFile, formatDateTime, base64Encode } from '../utils/helpers.js';
 import { validateMnemonic, validateShareCollection } from '../utils/validation.js';
 import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, INFO_MESSAGES, FILE_TEMPLATES } from '../constants/index.js';
 import { t } from '../utils/i18n.js';
@@ -16,13 +16,15 @@ export class ShareManager {
   constructor() {
     this.currentShares = [];
     this.currentThreshold = 0;
-    this.copiedShares = new Set();          // track copied shares by index
-    this.isEncryptionEnabled = false;       // toggle encryption-on-download
-    this.encryptionPassword = '';           // password used for on-the-fly encryption
-    this.encryptedShares = [];              // reserved; not used with streaming download
+    this.copiedShares = new Set(); // Track indices of shares already copied
+    this.isEncryptionEnabled = false; // Whether encryption is enabled
+    this.encryptionPassword = ''; // Encryption password
+    this.encryptedShares = []; // Encrypted shares cache
   }
 
-  /** Initialize encryption-related listeners (UI) */
+  /**
+   * Initialize encryption-related listeners
+   */
   initEncryptionListeners() {
     const enableEncryptionCheckbox = getElement(SELECTORS.ENABLE_ENCRYPTION);
     const encryptionFields = getElement(SELECTORS.ENCRYPTION_FIELDS);
@@ -38,7 +40,7 @@ export class ShareManager {
       this.isEncryptionEnabled = enableEncryptionCheckbox.checked;
       toggleElement(encryptionFields, this.isEncryptionEnabled);
 
-      // Clear password fields when disabling encryption
+      // If encryption is disabled, wipe password fields
       if (!this.isEncryptionEnabled) {
         if (encryptionPassword) encryptionPassword.value = '';
         if (confirmPassword) confirmPassword.value = '';
@@ -48,7 +50,7 @@ export class ShareManager {
       }
     });
 
-    // Password strength
+    // Password strength validation
     if (encryptionPassword && passwordStrength) {
       addEvent(encryptionPassword, 'input', () => {
         const password = encryptionPassword.value;
@@ -59,11 +61,13 @@ export class ShareManager {
         } else {
           passwordStrength.textContent = '';
         }
+
+        // Check confirmation match
         this.checkPasswordMatch();
       });
     }
 
-    // Confirm password check
+    // Confirm password validation
     if (confirmPassword && passwordMatch) {
       addEvent(confirmPassword, 'input', () => {
         this.checkPasswordMatch();
@@ -71,7 +75,9 @@ export class ShareManager {
     }
   }
 
-  /** Validate confirmation password inline UI */
+  /**
+   * Check if password and confirmation match
+   */
   checkPasswordMatch() {
     const encryptionPassword = getElement(SELECTORS.ENCRYPTION_PASSWORD);
     const confirmPassword = getElement(SELECTORS.CONFIRM_PASSWORD);
@@ -92,27 +98,31 @@ export class ShareManager {
   }
 
   /**
-   * Validate encryption configuration from the UI (when enabled)
-   * @returns {{isValid: boolean, error?: string}}
+   * Validate encryption settings
+   * @returns {Object} result { isValid: boolean, error?: string }
    */
   validateEncryptionSettings() {
-    if (!this.isEncryptionEnabled) return { isValid: true };
+    if (!this.isEncryptionEnabled) {
+      return { isValid: true };
+    }
 
     const encryptionPassword = getElement(SELECTORS.ENCRYPTION_PASSWORD);
     const confirmPassword = getElement(SELECTORS.CONFIRM_PASSWORD);
 
     if (!encryptionPassword || !confirmPassword) {
-      return { isValid: false, error: 'Encryption fields are missing. Please refresh and try again.' };
+      return { isValid: false, error: 'Missing encryption fields, please refresh and retry.' };
     }
 
     const password = encryptionPassword.value;
     const confirm = confirmPassword.value;
 
+    // Strength check
     const strengthValidation = validatePasswordStrength(password);
     if (strengthValidation.strength === 'weak') {
-      return { isValid: false, error: 'Password too weak. Use at least 8 characters with letters, numbers and symbols.' };
+      return { isValid: false, error: 'Password too weak. Use at least 8 characters with letters, numbers, and symbols.' };
     }
 
+    // Match check
     const matchValidation = validatePasswordMatch(password, confirm);
     if (!matchValidation.isValid) {
       return { isValid: false, error: 'Passwords do not match.' };
@@ -122,75 +132,73 @@ export class ShareManager {
     return { isValid: true };
   }
 
-  /** Clear encryption password (safety) */
-  clearEncryptionPassword() { this.encryptionPassword = ''; }
-  clearUploadEncryptionPassword() { this.uploadEncryptionPassword = ''; }
+  /**
+   * Securely wipe in-memory encryption password
+   */
+  clearEncryptionPassword() {
+    this.encryptionPassword = '';
+  }
+
+  clearUploadEncryptionPassword() {
+    this.uploadEncryptionPassword = '';
+  }
 
   /**
-   * Generate Shamir shares
+   * Generate shares
    * @param {string[]} words - mnemonic words
-   * @param {number} totalShares
-   * @param {number} threshold
-   * @returns {Promise<boolean>}
+   * @param {number} totalShares - total number of shares
+   * @param {number} threshold - shares required to recover
+   * @returns {Promise<boolean>} success
    */
   async generateShares(words, totalShares, threshold) {
     try {
-      // ✅ FIX: validate against a STRING, not an array
-      const mnemonic = words.join(' ');
-      const validation = validateMnemonic(mnemonic);
+      // Validate mnemonic
+      const validation = validateMnemonic(words);
       if (!validation.isValid) {
         this.showError(validation.errors[0]);
         return false;
       }
 
+      // Validate encryption settings if enabled
       const encryptionValidation = this.validateEncryptionSettings();
       if (!encryptionValidation.isValid) {
         this.showError(encryptionValidation.error);
         return false;
       }
 
-      // Split the mnemonic as string (fallback to bytes if needed)
-      let rawShares;
-      try {
-        rawShares = await split(mnemonic, totalShares, threshold);
-      } catch (_) {
-        const secretBytes = new TextEncoder().encode(mnemonic);
-        rawShares = await split(secretBytes, totalShares, threshold);
-      }
+      // Generate shares
+      const mnemonic = words.join(' ');
+      const secretBytes = new TextEncoder().encode(mnemonic);
+      const rawShares = await split(secretBytes, totalShares, threshold);
 
-      // Store Base64-encoded envelope (index/threshold/total + data)
+      // Base64-encode shares
       this.currentShares = rawShares.map((share, index) => {
-        let dataB64;
-        if (typeof share === 'string') {
-          dataB64 = btoa(share);
-        } else if (share instanceof Uint8Array) {
-          dataB64 = btoa(String.fromCharCode(...share));
-        } else {
-          dataB64 = btoa(String(share));
-        }
         const shareData = {
           index: index + 1,
-          threshold,
+          threshold: threshold,
           total: totalShares,
-          data: dataB64,
+          data: btoa(String.fromCharCode(...share)),
         };
         return btoa(JSON.stringify(shareData));
       });
 
       this.currentThreshold = threshold;
-      this.encryptedShares = [];
-      this.copiedShares.clear();
+      this.encryptedShares = []; // reset encrypted cache
+      this.copiedShares.clear(); // reset copy-state
 
+      // Render
       this.displayShares();
       this.showSuccess(SUCCESS_MESSAGES.SHARES_GENERATED);
       return true;
     } catch (error) {
-      this.showError(`${t('errors.generateFailed')}: ${error?.message || String(error)}`);
+      this.showError(ERROR_MESSAGES.GENERATE_FAILED(error.message));
       return false;
     }
   }
 
-  /** Render current shares to the UI */
+  /**
+   * Render shares list
+   */
   displayShares() {
     const resultDiv = getElement(SELECTORS.SHARES_RESULT);
     const sharesList = getElement(SELECTORS.SHARES_LIST);
@@ -202,14 +210,19 @@ export class ShareManager {
     clearElement(sharesList);
 
     this.currentShares.forEach((share, index) => {
-      const item = this.createShareItem(share, index + 1);
-      sharesList.appendChild(item);
+      const shareItem = this.createShareItem(share, index + 1);
+      sharesList.appendChild(shareItem);
     });
 
     toggleElement(resultDiv, true);
   }
 
-  /** Create a share item block */
+  /**
+   * Build a single share item row
+   * @param {string} share - encoded share
+   * @param {number} index - index of the share
+   * @returns {Element}
+   */
   createShareItem(share, index) {
     const shareItem = createElement('div', ['share-item']);
 
@@ -221,12 +234,15 @@ export class ShareManager {
     const buttons = createElement('div', ['share-buttons']);
 
     const copyBtn = createElement('button', ['copy-btn']);
+
+    // If this share was already copied, keep the success state
     if (this.copiedShares.has(index)) {
       copyBtn.textContent = t('success.copySuccess');
       toggleClass(copyBtn, CSS_CLASSES.COPIED, true);
     } else {
       copyBtn.textContent = t('copy');
     }
+
     addEvent(copyBtn, 'click', () => this.copyShare(copyBtn, share, index));
 
     const downloadBtn = createElement('button', ['download-btn']);
@@ -248,11 +264,19 @@ export class ShareManager {
     return shareItem;
   }
 
-  /** Copy a single share */
+  /**
+   * Copy a share to clipboard
+   * @param {Element} button
+   * @param {string} shareContent
+   * @param {number} shareIndex
+   */
   async copyShare(button, shareContent, shareIndex) {
     const success = await copyToClipboard(shareContent);
+
     if (success) {
+      // Mark as copied (sticky)
       this.copiedShares.add(shareIndex);
+
       button.textContent = t('success.copySuccess');
       toggleClass(button, CSS_CLASSES.COPIED, true);
     } else {
@@ -260,19 +284,25 @@ export class ShareManager {
     }
   }
 
-  /** Download a share (optionally encrypt on the fly) */
+  /**
+   * Download a share (encrypted or plain)
+   * @param {string} shareContent
+   * @param {number} shareIndex
+   */
   async downloadShare(shareContent, shareIndex) {
     try {
-      const enc = this.validateEncryptionSettings();
+      const encryptionValidation = this.validateEncryptionSettings();
 
-      if (this.isEncryptionEnabled && !enc.isValid) {
-        this.showError(enc.error);
+      if (this.isEncryptionEnabled && !encryptionValidation.isValid) {
+        this.showError(encryptionValidation.error);
         return;
       }
 
-      if (this.isEncryptionEnabled && enc.isValid) {
+      if (this.isEncryptionEnabled && encryptionValidation.isValid) {
+        // Encrypted download
         await this.downloadEncryptedShare(shareContent, shareIndex);
       } else {
+        // Plain download
         this.downloadStandardShare(shareContent, shareIndex);
       }
     } catch (error) {
@@ -280,53 +310,90 @@ export class ShareManager {
     }
   }
 
-  /** Download encrypted (.txt.gpg) */
+  /**
+   * Download encrypted share
+   * @param {string} shareContent
+   * @param {number} shareIndex
+   */
   async downloadEncryptedShare(shareContent, shareIndex) {
     try {
+      // Progress info
       this.showInfo(t('encryption.encryptingShare', shareIndex));
 
+      // Encrypt content
       const encryptedContent = await encryptWithPassword(shareContent, this.encryptionPassword);
+
+      // Clear password as soon as possible
       this.clearEncryptionPassword();
 
+      // .txt.gpg extension
       const filename = `${t('shareFilePrefix')}${shareIndex}.txt.gpg`;
-      const ok = downloadFile(encryptedContent, filename);
-      if (ok) this.showSuccess(t('success.encryptedShareDownloaded', shareIndex));
-      else this.showError(t('errors.downloadFailed'));
+
+      // Save raw GPG payload (no extra text)
+      const success = downloadFile(encryptedContent, filename);
+
+      if (success) {
+        this.showSuccess(t('success.encryptedShareDownloaded', shareIndex));
+      } else {
+        this.showError(t('errors.downloadFailed'));
+      }
     } catch (error) {
+      // Always clear password even on failure
       this.clearEncryptionPassword();
       throw new Error(t('encryption.encryptionFailed') + ': ' + error.message);
     }
   }
 
-  /** Download plain text share (.txt) with header/tips */
+  /**
+   * Download plain (unencrypted) share
+   * @param {string} shareContent
+   * @param {number} shareIndex
+   */
   downloadStandardShare(shareContent, shareIndex) {
-    const filename = `${t('shareFilePrefix')}${shareIndex}.txt`;
+    const fileExtension = 'txt';
+    const filename = `${t('shareFilePrefix')}${shareIndex}.${fileExtension}`;
+
+    // Include app info and safety tips
     const fileData = FILE_TEMPLATES.SHARE_CONTENT(shareIndex, shareContent);
     const fileContent = this.formatShareFileContent(fileData);
 
-    const ok = downloadFile(fileContent, filename);
-    if (ok) this.showSuccess(t('success.shareDownloaded', shareIndex));
-    else this.showError(t('errors.downloadFailed'));
+    const success = downloadFile(fileContent, filename);
+    if (success) {
+      this.showSuccess(t('success.shareDownloaded', shareIndex));
+    } else {
+      this.showError(t('errors.downloadFailed'));
+    }
   }
 
-  /** Build the .txt body with app info and safety tips */
+  /**
+   * Format the file content for a plain share
+   * @param {Object} fileData
+   * @returns {string}
+   */
   formatShareFileContent(fileData) {
     let content = `${t('fileTemplate.appName')} ${t('share', fileData.index)}\n${'='.repeat(50)}\n\n`;
+
     content += `${t('fileTemplate.shareContent')}:\n${fileData.content}\n\n${'='.repeat(50)}\n${t('fileTemplate.generatedTime')}: ${fileData.timestamp}\n\n${t(
       'fileTemplate.securityTips',
     )}:\n- ${t('fileTemplate.tip1')}\n- ${t('fileTemplate.tip2')}\n- ${t('fileTemplate.tip3')}`;
+
     return content;
   }
 
-  /** Live validation of pasted shares (classic flow) */
+  /**
+   * Validate pasted share input
+   */
   validateShareInput() {
     const input = getElement(SELECTORS.RECOVER_INPUT);
     const statusDiv = getElement(SELECTORS.INPUT_STATUS);
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
 
-    if (!input || !statusDiv || !recoverBtn) return;
+    if (!input || !statusDiv || !recoverBtn) {
+      return;
+    }
 
     const inputText = input.value.trim();
+
     if (!inputText) {
       this.updateStatus('waiting', t('waitingForInput'));
       recoverBtn.disabled = true;
@@ -347,15 +414,10 @@ export class ShareManager {
     const validation = validateShareCollection(shareStrings);
 
     if (!validation.isValid) {
-      const hasDuplicate =
-        (validation.errors && validation.errors.some((e) =>
-          String(e).toLowerCase().includes('duplicate')
-          || String(e).includes('重复')
-        )) || validation.duplicateIndexDetected;
-
       if (validation.validCount === 0) {
         this.updateStatus('invalid', t('errors.invalidShareFormat'));
-      } else if (hasDuplicate) {
+      } else if (validation.errors && validation.errors.some((error) => /duplicate/i.test(error))) {
+        // Language-neutral duplicate detection
         this.updateStatus('invalid', t('errors.duplicateShares'));
       } else {
         this.updateStatus('insufficient', t('errors.insufficientShares', validation.threshold, validation.validCount));
@@ -368,7 +430,7 @@ export class ShareManager {
   }
 
   /**
-   * Recover mnemonic from pasted or uploaded shares (classic Shamir flow)
+   * Recover mnemonic from pasted input
    * @returns {Promise<boolean>}
    */
   async recoverMnemonic() {
@@ -376,14 +438,18 @@ export class ShareManager {
     const resultDiv = getElement(SELECTORS.RECOVER_RESULT);
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
 
-    if (!input || !resultDiv || !recoverBtn) return false;
+    if (!input || !resultDiv || !recoverBtn) {
+      return false;
+    }
 
     const inputText = input.value.trim();
+
     if (!inputText) {
       this.showError(ERROR_MESSAGES.EMPTY_WORDS);
       return false;
     }
 
+    // Show processing state
     recoverBtn.disabled = true;
     recoverBtn.textContent = t('info.recovering');
 
@@ -393,61 +459,69 @@ export class ShareManager {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
 
-      // Parse standard envelope; if not parseable, treat as encrypted (PGP)
-      let maybeEncrypted = false;
+      // Detect whether this might be encrypted (not standard JSON/base64 format)
+      let isEncrypted = false;
       const validShareData = [];
 
       for (const shareStr of shareStrings) {
         try {
-          const obj = JSON.parse(atob(shareStr));
-          if (obj.threshold && obj.index && obj.data) validShareData.push(obj);
-        } catch {
-          if (shareStr.startsWith('-----BEGIN PGP MESSAGE-----')) {
-            maybeEncrypted = true;
-            validShareData.push({ encrypted: true, content: shareStr });
-          } else {
-            maybeEncrypted = true;
+          const shareData = JSON.parse(atob(shareStr));
+          if (shareData.threshold && shareData.index && shareData.data) {
+            validShareData.push(shareData);
           }
+        } catch (e) {
+          // Not a standard share, likely encrypted
+          isEncrypted = true;
         }
       }
 
-      if (validShareData.length === 0 && maybeEncrypted) {
+      // If no valid standard shares found, try decryption path
+      if (validShareData.length === 0 && isEncrypted) {
+        // Ask password via dialog
         let password = '';
         let isRetry = false;
 
         try {
           password = await this.getPasswordFromDialog(isRetry);
-        } catch {
+        } catch (error) {
+          // User cancelled
           throw new Error(t('encryption.passwordRequired'));
         }
 
+        // Try to decrypt each line
         this.showInfo(t('encryption.decryptingShares'));
 
         for (const shareStr of shareStrings) {
           try {
-            const decrypted = await decryptWithPassword(shareStr, password);
-            const obj = JSON.parse(atob(decrypted));
-            if (obj.threshold && obj.index && obj.data) validShareData.push(obj);
+            const decryptedShare = await decryptWithPassword(shareStr, password);
+            const shareData = JSON.parse(atob(decryptedShare));
+            if (shareData.threshold && shareData.index && shareData.data) {
+              validShareData.push(shareData);
+            }
           } catch (e) {
-            const msg = String(e?.message || e).toLowerCase();
-            const wrongPwd = msg.includes('password') && (msg.includes('wrong') || msg.includes('incorrect')) || msg.includes('密码');
-            if (wrongPwd) {
+            // If the underlying lib throws language-specific messages, match by intent
+            if (/invalid password|wrong password/i.test(e.message)) {
+              // Retry once with dialog
               isRetry = true;
               try {
                 password = await this.getPasswordFromDialog(isRetry);
-                const decrypted2 = await decryptWithPassword(shareStr, password);
-                const obj2 = JSON.parse(atob(decrypted2));
-                if (obj2.threshold && obj2.index && obj2.data) validShareData.push(obj2);
+                const decryptedShare = await decryptWithPassword(shareStr, password);
+                const shareData = JSON.parse(atob(decryptedShare));
+                if (shareData.threshold && shareData.index && shareData.data) {
+                  validShareData.push(shareData);
+                }
               } catch (retryError) {
-                const rmsg = String(retryError?.message || retryError).toLowerCase();
-                if (rmsg.includes('password') && (rmsg.includes('wrong') || rmsg.includes('incorrect')) || rmsg.includes('密码')) {
+                if (/invalid password|wrong password/i.test(retryError.message)) {
                   throw new Error(t('encryption.invalidPassword'));
                 }
+                // Other decryption errors: skip this share
               }
             }
+            // Other decryption errors: skip this share
           }
         }
 
+        // Still nothing usable
         if (validShareData.length === 0) {
           throw new Error(t('encryption.decryptionFailed') + t('errors.noValidShares'));
         }
@@ -458,26 +532,23 @@ export class ShareManager {
       }
 
       const threshold = validShareData[0].threshold;
+
       if (validShareData.length < threshold) {
         throw new Error(t('errors.insufficientShares', threshold, validShareData.length));
       }
 
-      // Prefer passing string shares; fallback to bytes if needed
-      const sharePayloadStrings = validShareData.slice(0, threshold).map((data) => atob(data.data));
-      let combined;
-      try {
-        combined = await combine(sharePayloadStrings);
-      } catch (_) {
-        const shareBytes = sharePayloadStrings.map((bin) => {
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          return bytes;
-        });
-        combined = await combine(shareBytes);
-      }
-      const recoveredMnemonic = combined instanceof Uint8Array
-        ? new TextDecoder().decode(combined)
-        : String(combined);
+      // Convert to Uint8Array
+      const shares = validShareData.slice(0, threshold).map((data) => {
+        const binaryString = atob(data.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes;
+      });
+
+      const recoveredBytes = await combine(shares);
+      const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
 
       this.displayRecoverResult(recoveredMnemonic, validShareData.length, threshold);
       return true;
@@ -485,98 +556,121 @@ export class ShareManager {
       this.displayRecoverError(error.message);
       return false;
     } finally {
+      // Restore button state
       recoverBtn.disabled = false;
       recoverBtn.textContent = t('recoverBtn');
+      // Wipe any upload password cache
       this.clearUploadEncryptionPassword();
     }
   }
 
   /**
-   * Recover from programmatic shares array (classic Shamir path)
+   * Recover mnemonic from a provided array of shares
+   * @param {Array} shares
+   * @param {string} encryptionPassword (deprecated; password is gathered via dialog)
+   * @returns {Promise<boolean>}
    */
   async recoverMnemonicWithShares(shares, encryptionPassword) {
     const resultDiv = getElement(SELECTORS.RECOVER_RESULT);
     const recoverBtn = getElement(SELECTORS.RECOVER_BTN);
-    if (!resultDiv || !recoverBtn) return false;
+
+    if (!resultDiv || !recoverBtn) {
+      return false;
+    }
 
     if (!shares || shares.length === 0) {
       this.showError(ERROR_MESSAGES.EMPTY_WORDS);
       return false;
     }
 
+    // Show processing state
     recoverBtn.disabled = true;
     recoverBtn.textContent = t('info.recovering');
 
     try {
-      let maybeEncrypted = false;
+      // Classify shares (encrypted vs plain)
+      let isEncrypted = false;
       const validShareData = [];
 
       for (const share of shares) {
-        if (share?.encrypted) {
-          maybeEncrypted = true;
+        if (share.encrypted) {
+          isEncrypted = true;
           validShareData.push(share);
           continue;
         }
 
         try {
           if (typeof share === 'string') {
+            // Raw PGP?
             if (share.startsWith('-----BEGIN PGP MESSAGE-----')) {
-              maybeEncrypted = true;
+              isEncrypted = true;
               validShareData.push({ encrypted: true, content: share });
               continue;
             }
-            const obj = JSON.parse(atob(share));
-            if (obj.threshold && obj.index && obj.data) validShareData.push(obj);
+
+            const shareData = JSON.parse(atob(share));
+            if (shareData.threshold && shareData.index && shareData.data) {
+              validShareData.push(shareData);
+            }
           } else if (share.threshold && share.index && share.data) {
             validShareData.push(share);
           }
-        } catch {
-          maybeEncrypted = true;
+        } catch (e) {
+          isEncrypted = true;
           validShareData.push({ encrypted: true, content: share });
         }
       }
 
-      if (maybeEncrypted) {
+      // Decrypt if needed
+      if (isEncrypted) {
         let password = '';
         let isRetry = false;
 
         try {
           password = await this.getPasswordFromDialog(isRetry);
-        } catch {
+        } catch (error) {
           throw new Error(t('encryption.passwordRequired'));
         }
 
         this.showInfo(t('encryption.decryptingShares'));
 
-        const encryptedShares = validShareData.filter((s) => s.encrypted);
+        const encryptedShares = validShareData.filter((share) => share.encrypted);
         const decryptedShares = [];
+        let decryptionSuccess = false;
 
-        for (const encShare of encryptedShares) {
+        for (const encryptedShare of encryptedShares) {
           try {
-            const decrypted = await decryptWithPassword(encShare.content, password);
-            const obj = JSON.parse(atob(decrypted));
-            if (obj.threshold && obj.index && obj.data) decryptedShares.push(obj);
+            const decryptedShare = await decryptWithPassword(encryptedShare.content, password);
+            const shareData = JSON.parse(atob(decryptedShare));
+            if (shareData.threshold && shareData.index && shareData.data) {
+              decryptedShares.push(shareData);
+              decryptionSuccess = true;
+            }
           } catch (e) {
-            const msg = String(e?.message || e).toLowerCase();
-            const wrongPwd = msg.includes('password') && (msg.includes('wrong') || msg.includes('incorrect')) || msg.includes('密码');
-            if (wrongPwd) {
+            if (/invalid password|wrong password/i.test(e.message)) {
+              // Retry once
               isRetry = true;
               try {
                 password = await this.getPasswordFromDialog(isRetry);
-                const decrypted2 = await decryptWithPassword(encShare.content, password);
-                const obj2 = JSON.parse(atob(decrypted2));
-                if (obj2.threshold && obj2.index && obj2.data) decryptedShares.push(obj2);
+                const decryptedShare = await decryptWithPassword(encryptedShare.content, password);
+                const shareData = JSON.parse(atob(decryptedShare));
+                if (shareData.threshold && shareData.index && shareData.data) {
+                  decryptedShares.push(shareData);
+                  decryptionSuccess = true;
+                }
               } catch (retryError) {
-                const rmsg = String(retryError?.message || retryError).toLowerCase();
-                if (rmsg.includes('password') && (rmsg.includes('wrong') || rmsg.includes('incorrect')) || rmsg.includes('密码')) {
+                if (/invalid password|wrong password/i.test(retryError.message)) {
                   throw new Error(t('encryption.invalidPassword'));
                 }
+                // Other decryption errors: continue
               }
             }
+            // Other errors: continue
           }
         }
 
-        const finalShares = validShareData.filter((s) => !s.encrypted).concat(decryptedShares);
+        // Merge decrypted with existing plain shares
+        const finalShares = validShareData.filter((share) => !share.encrypted).concat(decryptedShares);
 
         if (finalShares.length === 0) {
           throw new Error(t('encryption.decryptionFailed') + t('errors.noValidShares'));
@@ -587,45 +681,44 @@ export class ShareManager {
           throw new Error(t('errors.insufficientShares', threshold, finalShares.length));
         }
 
-        // Try string shares first, then bytes
-        const shareStrings = finalShares.slice(0, threshold).map((data) => atob(data.data));
-        let combined;
-        try {
-          combined = await combine(shareStrings);
-        } catch (_) {
-          const shareBytes = shareStrings.map((bin) => {
-            const bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            return bytes;
-          });
-          combined = await combine(shareBytes);
-        }
-        const mnemonic = combined instanceof Uint8Array ? new TextDecoder().decode(combined) : String(combined);
+        const shareBytes = finalShares.slice(0, threshold).map((data) => {
+          const binaryString = atob(data.data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return bytes;
+        });
 
-        this.displayRecoverResult(mnemonic, finalShares.length, threshold);
+        const recoveredBytes = await combine(shareBytes);
+        const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
+
+        this.displayRecoverResult(recoveredMnemonic, finalShares.length, threshold);
         return true;
       }
 
-      if (validShareData.length === 0) throw new Error(t('errors.noValidShares'));
+      // Plain path
+      if (validShareData.length === 0) {
+        throw new Error(t('errors.noValidShares'));
+      }
 
       const threshold = validShareData[0].threshold;
+
       if (validShareData.length < threshold) {
         throw new Error(t('errors.insufficientShares', threshold, validShareData.length));
       }
 
-      const shareStrings2 = validShareData.slice(0, threshold).map((data) => atob(data.data));
-      let combined2;
-      try {
-        combined2 = await combine(shareStrings2);
-      } catch (_) {
-        const shareBytes2 = shareStrings2.map((bin) => {
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          return bytes;
-        });
-        combined2 = await combine(shareBytes2);
-      }
-      const recoveredMnemonic = combined2 instanceof Uint8Array ? new TextDecoder().decode(combined2) : String(combined2);
+      const shareBytes = validShareData.slice(0, threshold).map((data) => {
+        const binaryString = atob(data.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes;
+      });
+
+      const recoveredBytes = await combine(shareBytes);
+      const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
 
       this.displayRecoverResult(recoveredMnemonic, validShareData.length, threshold);
       return true;
@@ -633,14 +726,22 @@ export class ShareManager {
       this.displayRecoverError(error.message);
       return false;
     } finally {
+      // Restore button state
       recoverBtn.disabled = false;
       recoverBtn.textContent = t('recoverBtn');
+      // Wipe any upload password cache
       this.clearUploadEncryptionPassword();
     }
   }
 
-  /** Render recovery success block */
+  /**
+   * Show recovery result
+   * @param {string} mnemonic
+   * @param {number} usedShares
+   * @param {number} threshold
+   */
   displayRecoverResult(mnemonic, usedShares, threshold) {
+    // Decide which tab result area to use
     const activeTabBtn = getElement('.tab-btn.active');
     let resultDiv;
 
@@ -649,30 +750,37 @@ export class ShareManager {
     } else if (activeTabBtn && activeTabBtn.id === 'uploadTabBtn') {
       resultDiv = getElement(SELECTORS.UPLOAD_RECOVER_RESULT);
     } else {
+      // Fallback
       resultDiv = getElement(SELECTORS.RECOVER_RESULT);
     }
 
     if (!resultDiv) return;
 
+    // Wrap words for styling
     const words = mnemonic
       .split(' ')
-      .map((w) => `<span class="word">${w}</span>`)
+      .map((word) => `<span class="word">${word}</span>`)
       .join(' ');
 
-    const html = `
+    const resultHTML = `
       <div class="alert alert-success">
         <strong>${t('success.recoverySuccess')}</strong><br>
         <strong>${t('mnemonic')}:</strong><br>
         <span class="recovered-mnemonic">${words}</span><br>
-        <strong>${t('sharesUsed')}:</strong>${usedShares} ${t('shares')} (${t('need')} ${threshold} ${t('shares')})<br>
-        <strong>${t('recoveryTime')}:</strong>${formatDateTime()}
+        <strong>${t('sharesUsed')}:</strong> ${usedShares} ${t('shares')} (${t('need')} ${threshold} ${t('shares')})<br>
+        <strong>${t('recoveryTime')}:</strong> ${formatDateTime()}
       </div>
     `;
-    setHTML(resultDiv, html);
+
+    setHTML(resultDiv, resultHTML);
   }
 
-  /** Render recovery error */
+  /**
+   * Show recovery error
+   * @param {string} errorMessage
+   */
   displayRecoverError(errorMessage) {
+    // Decide which tab result area to use
     const activeTabBtn = getElement('.tab-btn.active');
     let resultDiv;
 
@@ -681,90 +789,152 @@ export class ShareManager {
     } else if (activeTabBtn && activeTabBtn.id === 'uploadTabBtn') {
       resultDiv = getElement(SELECTORS.UPLOAD_RECOVER_RESULT);
     } else {
+      // Fallback
       resultDiv = getElement(SELECTORS.RECOVER_RESULT);
     }
 
     if (!resultDiv) return;
 
+    // Clear previous content
     resultDiv.innerHTML = '';
 
+    // Build a safe DOM structure
     const alertDiv = document.createElement('div');
     alertDiv.className = 'alert alert-error';
 
-    const strong = document.createElement('strong');
-    strong.textContent = t('errors.recoveryFailed');
-    alertDiv.appendChild(strong);
+    const strongElement = document.createElement('strong');
+    strongElement.textContent = t('errors.recoveryFailed');
+    alertDiv.appendChild(strongElement);
 
-    const span = document.createElement('span');
-    span.textContent = errorMessage;
-    alertDiv.appendChild(span);
+    const errorTextSpan = document.createElement('span');
+    errorTextSpan.textContent = errorMessage;
+    alertDiv.appendChild(errorTextSpan);
 
     alertDiv.appendChild(document.createElement('br'));
 
-    const small = document.createElement('small');
-    small.textContent = t('errors.checkShareFormat');
-    alertDiv.appendChild(small);
+    const smallElement = document.createElement('small');
+    smallElement.textContent = t('errors.checkShareFormat');
+    alertDiv.appendChild(smallElement);
 
     resultDiv.appendChild(alertDiv);
   }
 
-  /** Update inline status box */
+  /**
+   * Update input status UI
+   * @param {string} status
+   * @param {string} message
+   */
   updateStatus(status, message) {
     const statusDiv = getElement(SELECTORS.INPUT_STATUS);
     if (!statusDiv) return;
 
+    // Reset all status classes
     statusDiv.className = 'input-status';
+
+    // Add new one
     toggleClass(statusDiv, `input-${status}`, true);
+
+    // Set message
     statusDiv.innerHTML = `<span class="status-text">${message}</span>`;
   }
 
-  showSuccess(message) { this.showAlert('success', message); }
-  showError(message) { this.showAlert('error', message); }
-  showInfo(message) { this.showAlert('info', message); }
+  /**
+   * Show success alert
+   * @param {string} message
+   */
+  showSuccess(message) {
+    this.showAlert('success', message);
+  }
 
-  /** Generic alert renderer (auto-hide) */
+  /**
+   * Show error alert
+   * @param {string} message
+   */
+  showError(message) {
+    this.showAlert('error', message);
+  }
+
+  /**
+   * Show info alert
+   * @param {string} message
+   */
+  showInfo(message) {
+    this.showAlert('info', message);
+  }
+
+  /**
+   * Generic alert helper
+   * @param {'success'|'error'|'info'} type
+   * @param {string} message
+   */
   showAlert(type, message) {
+    // Hide all standard alerts
     this.hideAllAlerts();
 
-    let el;
+    let alertElement;
     switch (type) {
-      case 'success': el = getElement(SELECTORS.SUCCESS_ALERT); break;
-      case 'error': el = getElement(SELECTORS.GENERAL_ERROR_ALERT); break;
-      case 'info':
-        el = document.createElement('div');
-        el.className = 'alert alert-info';
-        el.style.display = 'none';
-        const container = getElement('.main-content');
-        if (container) container.appendChild(el);
+      case 'success':
+        alertElement = getElement(SELECTORS.SUCCESS_ALERT);
         break;
-      default: el = getElement(SELECTORS.GENERAL_ERROR_ALERT); break;
+      case 'error':
+        alertElement = getElement(SELECTORS.GENERAL_ERROR_ALERT);
+        break;
+      case 'info':
+        // Create a temporary info alert
+        alertElement = document.createElement('div');
+        alertElement.className = 'alert alert-info';
+        alertElement.style.display = 'none';
+        const container = getElement('.main-content');
+        if (container) {
+          container.appendChild(alertElement);
+        }
+        break;
+      default:
+        alertElement = getElement(SELECTORS.GENERAL_ERROR_ALERT);
+        break;
     }
 
-    if (el) {
-      setHTML(el, message);
-      toggleElement(el, true);
+    if (alertElement) {
+      setHTML(alertElement, message);
+      toggleElement(alertElement, true);
+
+      // Auto-hide after 3s
       setTimeout(() => {
-        toggleElement(el, false);
-        if (type === 'info' && el.parentNode) el.parentNode.removeChild(el);
+        toggleElement(alertElement, false);
+        // Remove temporary info element
+        if (type === 'info' && alertElement.parentNode) {
+          alertElement.parentNode.removeChild(alertElement);
+        }
       }, 3000);
     }
   }
 
-  /** Hide all fixed alerts */
+  /**
+   * Hide all built-in alerts
+   */
   hideAllAlerts() {
     const alerts = [SELECTORS.INPUT_ERROR_ALERT, SELECTORS.DUPLICATE_ALERT, SELECTORS.GENERAL_ERROR_ALERT, SELECTORS.SUCCESS_ALERT];
+
     alerts.forEach((selector) => {
-      const a = getElement(selector);
-      if (a) toggleElement(a, false);
+      const alert = getElement(selector);
+      if (alert) {
+        toggleElement(alert, false);
+      }
     });
   }
 
-  /** Ask password with modal dialog */
+  /**
+   * Ask password via dialog
+   * @param {boolean} isRetry
+   * @returns {Promise<string>}
+   */
   async getPasswordFromDialog(isRetry = false) {
     return await passwordDialog.show(isRetry);
   }
 
-  /** Cleanup */
+  /**
+   * Cleanup resources
+   */
   destroy() {
     this.currentShares = [];
     this.currentThreshold = 0;

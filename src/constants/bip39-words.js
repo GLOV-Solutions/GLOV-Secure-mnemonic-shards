@@ -1,6 +1,6 @@
 /**
- * BIP39 单词列表
- * 从原始文件移动到 data 目录，提高代码组织性
+ * BIP39 word list
+ * Moved from the original file to the /data directory to improve code organization.
  */
 
 export const BIP39_WORDLIST = [
