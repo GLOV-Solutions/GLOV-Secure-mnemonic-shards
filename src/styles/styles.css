@@ -495,7 +495,7 @@ select:hover {
   transition: all var(--transition-base);
   -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
-  color: var(--color-text);
+  color: #0f172a;
   font-weight: 500;
 }
 
