@@ -2049,15 +2049,13 @@ select:hover {
   background: rgba(20, 163, 154, 0.08);
 }
 
-/* Remove outer card around mnemonic words */
-.word-input,
-.word-input .input-wrapper {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+.words-grid .word-input input {
+  background: rgba(7, 32, 36, 0.35) !important;
+  border: 1px solid rgba(148, 163, 184, 0.10) !important;
+  box-shadow: none !important;
 }
 
-[data-theme="dark"] .word-input input {
-  border-radius: 12px;
+.words-grid .word-input input:focus {
+  border-color: rgba(34, 211, 197, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 197, 0.12) !important;
 }
