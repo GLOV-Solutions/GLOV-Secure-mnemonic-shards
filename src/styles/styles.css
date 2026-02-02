@@ -154,12 +154,11 @@ body {
   background-color: #06191c;
   background-image:
     radial-gradient(circle at top left, rgba(34, 211, 197, 0.22), transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.18), transparent 50%),
     linear-gradient(135deg, rgba(6, 25, 28, 0.95), rgba(9, 40, 43, 0.9)),
     url('/assets/glovfond-secure.png');
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
-  background-position: top left, 20% 80%, center center, center center;
-  background-size: 600px 600px, 700px 700px, cover, cover;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-position: top left, center center, center center;
+  background-size: 600px 600px, cover, cover;
   background-attachment: fixed;
   min-height: 100vh;
   padding: var(--space-lg);
@@ -180,7 +179,7 @@ body {
 
 /* Layout */
 .container {
-  max-width: 1024px;
+  max-width: 1240px;
   margin: 0 auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -329,7 +328,7 @@ body {
 
 .section {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: var(--radius-xl);
   padding: var(--space-xl);
   box-shadow: var(--shadow-sm);
@@ -444,7 +443,7 @@ body {
 
 select {
   padding: var(--space-md) var(--space-xl) var(--space-md) var(--space-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-base);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
@@ -489,7 +488,7 @@ select:hover {
 .word-input input {
   width: 100%;
   padding: var(--space-lg) var(--space-md) var(--space-md) var(--space-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
   font-size: var(--font-size-base);
@@ -641,7 +640,7 @@ select:hover {
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   margin-bottom: var(--space-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   position: relative;
   transition: all var(--transition-base);
 }
@@ -731,7 +730,7 @@ select:hover {
   background: var(--color-surface-secondary);
   padding: var(--space-md);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 /* Recovery Section */
@@ -1139,7 +1138,7 @@ select:hover {
   min-height: 180px;
   max-height: 300px;
   padding: var(--space-lg);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: var(--radius-lg);
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
   font-size: var(--font-size-sm);
