@@ -229,13 +229,16 @@ body {
 
 /* Logo styling */
 .logo-link {
-  display: inline-block;
-  margin-bottom: 0.5rem;
+  display: block;
+  width: fit-content;
+  margin: 0 auto var(--space-sm);
 }
 .logo-img {
   max-height: 100px;
   height: auto;
   width: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 
@@ -488,7 +491,7 @@ select:hover {
 .word-input input {
   width: 100%;
   padding: var(--space-lg) var(--space-md) var(--space-md) var(--space-md);
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: none;
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
   font-size: var(--font-size-base);
@@ -497,6 +500,7 @@ select:hover {
   -webkit-tap-highlight-color: transparent;
   color: #0f172a;
   font-weight: 500;
+  box-shadow: none;
 }
 
 .word-input input:focus {
@@ -2051,11 +2055,11 @@ select:hover {
 
 .words-grid .word-input input {
   background: rgba(7, 32, 36, 0.35) !important;
-  border: 1px solid rgba(148, 163, 184, 0.10) !important;
+  border: none !important;
   box-shadow: none !important;
 }
 
 .words-grid .word-input input:focus {
-  border-color: rgba(34, 211, 197, 0.55) !important;
-  box-shadow: 0 0 0 3px rgba(34, 211, 197, 0.12) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
