@@ -1974,3 +1974,77 @@ select:hover {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
 }
+
+/* ============================= */
+/* DARK MODE INPUTS & BUTTONS */
+/* ============================= */
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: linear-gradient(
+    180deg,
+    rgba(7, 32, 36, 0.95),
+    rgba(6, 19, 23, 0.95)
+  );
+  color: var(--color-text);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Focus states */
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(34, 211, 197, 0.15);
+  background: rgba(6, 19, 23, 0.98);
+}
+
+/* Secondary buttons */
+[data-theme="dark"] .copy-btn,
+[data-theme="dark"] .download-btn {
+  background: linear-gradient(
+    180deg,
+    rgba(7, 32, 36, 0.9),
+    rgba(6, 19, 23, 0.9)
+  );
+  color: var(--color-text);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .copy-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-success),
+    var(--color-success-hover)
+  );
+  color: #fff;
+}
+
+[data-theme="dark"] .download-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-hover)
+  );
+  color: #fff;
+}
+
+[data-theme="dark"] .upload-area {
+  background: linear-gradient(
+    180deg,
+    rgba(7, 32, 36, 0.9),
+    rgba(6, 19, 23, 0.9)
+  );
+  border-color: rgba(148, 163, 184, 0.35);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .upload-area:hover {
+  background: rgba(20, 163, 154, 0.08);
+}
