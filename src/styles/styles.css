@@ -550,7 +550,7 @@ select:hover {
   font-size: var(--font-size-base);
   pointer-events: none;
   transition: all var(--transition-base);
-  background: var(--color-surface);
+  /*background: var(--color-surface);*/
   padding: 0 var(--space-xs);
   font-weight: 500;
 }
