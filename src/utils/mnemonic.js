@@ -1,10 +1,6 @@
 import { entropyToMnemonic } from '@scure/bip39';
 import { wordlist as englishWordlist } from '@scure/bip39/wordlists/english';
 
-function bytesToHex(bytes) {
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 /**
  * Generate a BIP-39 mnemonic in English using 128 bits (12 words)
  * or 256 bits (24 words).
@@ -26,8 +22,7 @@ export function generateMnemonicWords(wordCount) {
   const random = new Uint8Array(entropyBytes);
   globalThis.crypto.getRandomValues(random);
 
-  const entropyHex = bytesToHex(random);
-  const mnemonic = entropyToMnemonic(entropyHex, englishWordlist).trim().toLowerCase();
+  const mnemonic = entropyToMnemonic(random, englishWordlist).trim().toLowerCase();
   const words = mnemonic.split(/\s+/).filter(Boolean);
 
   if (words.length !== wordCount) {
