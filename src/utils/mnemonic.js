@@ -1,4 +1,8 @@
-import { generateMnemonic } from 'bip39';
+import { entropyToMnemonic } from 'bip39';
+
+function bytesToHex(bytes) {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 /**
  * Generate a BIP-39 mnemonic in English using 128 bits (12 words)
@@ -7,8 +11,22 @@ import { generateMnemonic } from 'bip39';
  * @returns {string[]}
  */
 export function generateMnemonicWords(wordCount) {
-  const strength = wordCount === 24 ? 256 : 128;
-  const mnemonic = generateMnemonic(strength).trim().toLowerCase();
+  const entropyBits = wordCount === 24 ? 256 : 128;
+  const entropyBytes = entropyBits / 8;
+
+  if (
+    typeof globalThis === 'undefined' ||
+    !globalThis.crypto ||
+    typeof globalThis.crypto.getRandomValues !== 'function'
+  ) {
+    throw new Error('Secure random source is not available.');
+  }
+
+  const random = new Uint8Array(entropyBytes);
+  globalThis.crypto.getRandomValues(random);
+
+  const entropyHex = bytesToHex(random);
+  const mnemonic = entropyToMnemonic(entropyHex).trim().toLowerCase();
   const words = mnemonic.split(/\s+/).filter(Boolean);
 
   if (words.length !== wordCount) {
