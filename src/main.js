@@ -77,6 +77,7 @@ class MnemonicSplitApp {
     this.setupEventListeners();
     this.setupLanguageSwitcher();
     this.updateThresholdOptions();
+    this.updateFooterVersion();
     this.setInitialState();
 
     // i18n first (so messages can be translated)
@@ -254,6 +255,13 @@ class MnemonicSplitApp {
     for (let i = 1; i <= this.currentWordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
       if (input) input.placeholder = '';
+    }
+  }
+
+  updateFooterVersion() {
+    const versionEl = getElement('#appVersion');
+    if (versionEl) {
+      versionEl.textContent = APP_CONFIG.VERSION;
     }
   }
 
