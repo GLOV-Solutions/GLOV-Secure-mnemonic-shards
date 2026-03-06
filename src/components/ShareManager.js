@@ -27,6 +27,7 @@ export class ShareManager {
    * Initialize encryption-related listeners
    */
   initEncryptionListeners() {
+    const encryptionForm = getElement('#encryptionForm');
     const enableEncryptionCheckbox = getElement(SELECTORS.ENABLE_ENCRYPTION);
     const encryptionFields = getElement(SELECTORS.ENCRYPTION_FIELDS);
     const encryptionPassword = getElement(SELECTORS.ENCRYPTION_PASSWORD);
@@ -35,6 +36,10 @@ export class ShareManager {
     const passwordMatch = getElement(SELECTORS.PASSWORD_MATCH);
 
     if (!enableEncryptionCheckbox || !encryptionFields) return;
+
+    if (encryptionForm) {
+      addEvent(encryptionForm, 'submit', (e) => e.preventDefault());
+    }
 
     // Toggle encryption options
     addEvent(enableEncryptionCheckbox, 'change', () => {

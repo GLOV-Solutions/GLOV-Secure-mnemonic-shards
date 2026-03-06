@@ -13,7 +13,7 @@ export const APP_CONFIG = {
 // Mnemonic configuration
 export const MNEMONIC_CONFIG = {
   WORD_COUNTS: [12, 24],
-  DEFAULT_WORD_COUNT: 12,
+  DEFAULT_WORD_COUNT: 24,
   MIN_SHARES: 3,
   MAX_SHARES: 7,
   DEFAULT_TOTAL_SHARES: 5,
@@ -67,9 +67,11 @@ export const SELECTORS = {
 
   // Buttons
   GENERATE_BTN: '#generateBtn',
+  GENERATE_SEED_BTN: '#generateSeedBtn',
   RECOVER_BTN: '#recoverBtn',
 
   // Inputs
+  AUTO_SHARD_AFTER_SEED: '#autoShardAfterSeed',
   RECOVER_INPUT: '#recoverInput',
 
   // Result areas

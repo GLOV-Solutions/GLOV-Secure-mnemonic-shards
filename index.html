@@ -81,8 +81,8 @@
               <label data-i18n="wordCountLabel">Mnemonic Word Count</label>
               <div class="btn-group" id="wordCountButtons">
                 <!-- Removed inline handlers: JS attaches listeners -->
-                <button id="words12" class="active" data-i18n="words12">12 words</button>
-                <button id="words24" data-i18n="words24">24 words</button>
+                <button id="words12" data-i18n="words12">12 words</button>
+                <button id="words24" class="active" data-i18n="words24">24 words</button>
               </div>
             </div>
 
@@ -105,6 +105,25 @@
                 <option value="4">4 shares</option>
                 <option value="5">5 shares</option>
               </select>
+            </div>
+          </div>
+
+          <div class="seed-generation-panel">
+            <div class="control-group">
+              <label id="seedGenerationLabel">Seed generation</label>
+              <div class="seed-generation-actions">
+                <button type="button" class="seed-generate-btn" id="generateSeedBtn">
+                  Generate Seed
+                </button>
+              </div>
+              <small class="seed-generation-hint" id="seedGenerationHint">
+                Generate a valid BIP-39 seed phrase, or fill the words manually below.
+              </small>
+              <label class="checkbox-container">
+                <input type="checkbox" id="autoShardAfterSeed" />
+                <span class="checkmark"></span>
+                <span id="autoShardAfterSeedLabel">Automatically generate shards right after seed generation</span>
+              </label>
             </div>
           </div>
         </div>
@@ -161,6 +180,7 @@
               </div>
 
               <div id="encryptionFields" class="encryption-fields" style="display: none">
+                <form id="encryptionForm" autocomplete="off" novalidate>
                 <div class="control-group">
                   <label for="encryptionPassword" data-i18n="encryption.passwordLabel">Password</label>
                   <input
@@ -188,9 +208,10 @@
                 </div>
 
                 <div class="alert alert-warning" data-i18n="encryption.passwordTip">
-                  <strong>Important:</strong> Remember this password â€” it will be required to recover
+                  <strong>Important:</strong> Remember this password — it will be required to recover
                   the mnemonic.
                 </div>
+                </form>
               </div>
             </div>
           </div>
@@ -289,6 +310,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
                   </p>
                 </div>
 
+                <form id="uploadDecryptionForm" autocomplete="off" novalidate>
                 <div class="encryption-password-input-group">
                   <label for="uploadEncryptionPassword" data-i18n="encryption.passwordLabel">Password</label>
                   <div class="password-input-wrapper">
@@ -312,13 +334,14 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
                 </div>
 
                 <div class="encryption-password-actions">
-                  <button class="btn btn-secondary" id="skipDecryptionBtn" data-i18n="skipDecryption">
+                  <button type="button" class="btn btn-secondary" id="skipDecryptionBtn" data-i18n="skipDecryption">
                     Skip Decryption
                   </button>
-                  <button class="btn btn-primary" id="applyDecryptionBtn" data-i18n="applyDecryption">
+                  <button type="button" class="btn btn-primary" id="applyDecryptionBtn" data-i18n="applyDecryption">
                     Apply Decryption
                   </button>
                 </div>
+                </form>
               </div>
 
               <!-- Uploaded files list -->

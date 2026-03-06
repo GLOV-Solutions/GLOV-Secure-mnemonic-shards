@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Internationalization (i18n) bundles
  * Supported languages: English (EN), French (FR), Chinese (ZH - optional)
  */
@@ -11,14 +11,14 @@ export const LANGUAGES = {
 
 export const LANGUAGE_NAMES = {
   [LANGUAGES.EN]: 'English',
-  [LANGUAGES.FR]: 'Français',
-  [LANGUAGES.ZH]: '中文',
+  [LANGUAGES.FR]: 'FranÃ§ais',
+  [LANGUAGES.ZH]: 'ä¸­æ–‡',
 };
 
 export const TRANSLATIONS = {
   [LANGUAGES.EN]: {
     // Page title and description
-    appTitle: 'GLOV Secure — Mnemonic Shards',
+    appTitle: 'GLOV Secure â€” Mnemonic Shards',
     appDescription:
       'Securely split your mnemonic phrase into multiple shards. Any specified number of shards can recover the original mnemonic.',
 
@@ -47,7 +47,7 @@ export const TRANSLATIONS = {
     recoverBtn: 'Recover Mnemonic',
     recoverPlaceholder: `Paste shard contents here, one shard per line...
 
-💡 Tip: Paste multiple shards at once, system will handle line breaks automatically
+ðŸ’¡ Tip: Paste multiple shards at once, system will handle line breaks automatically
 
 Example format:
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
@@ -172,7 +172,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
 
     // File template section
     fileTemplate: {
-      appName: 'GLOV Secure — Mnemonic Shards',
+      appName: 'GLOV Secure â€” Mnemonic Shards',
       shareContent: 'Share content',
       generatedTime: 'Generated time',
       securityTips: 'Security tips',
@@ -235,95 +235,95 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
   },
 
   [LANGUAGES.FR]: {
-    appTitle: 'GLOV Secure — Mnemonic Shards',
+    appTitle: 'GLOV Secure â€” Mnemonic Shards',
     appDescription:
-      'Divisez en toute sécurité votre phrase mnémonique en plusieurs fragments. N’importe quel nombre spécifié de fragments peut reconstituer la phrase originale.',
+      'Divisez en toute sÃ©curitÃ© votre phrase mnÃ©monique en plusieurs shares. Nâ€™importe quel nombre spÃ©cifiÃ© de shares peut reconstituer la phrase originale.',
 
     configTitle: 'Options de configuration',
-    wordCountLabel: 'Nombre de mots de la phrase mnémonique',
+    wordCountLabel: 'Nombre de mots de la phrase mnÃ©monique',
     words12: '12 mots',
     words24: '24 mots',
-    totalSharesLabel: 'Nombre total de fragments',
-    thresholdLabel: 'Fragments requis pour la récupération',
-    sharesOption: (count) => `${count} fragments`,
+    totalSharesLabel: 'Nombre total de shares',
+    thresholdLabel: 'Shares requises pour la rÃ©cupÃ©ration',
+    sharesOption: (count) => `${count} shares`,
 
-    inputTitle: 'Saisir la phrase mnémonique',
-    generateBtn: 'Générer les fragments',
+    inputTitle: 'Saisir la phrase mnÃ©monique',
+    generateBtn: 'GÃ©nÃ©rer les shares',
 
-    recoverTitle: 'Récupérer la phrase mnémonique',
+    recoverTitle: 'RÃ©cupÃ©rer la phrase mnÃ©monique',
     recoverInstructions: `
       <strong>Instructions :</strong><br />
-      1. Collez chaque fragment dans la zone ci-dessous, un fragment par ligne<br />
-      2. Le format du fragment doit être une chaîne Base64 complète<br />
-      3. Le nombre minimal de fragments doit être atteint pour lancer la récupération<br />
-      4. Les fragments supplémentaires seront ignorés automatiquement
+      1. Collez chaque share dans la zone ci-dessous, une share par ligne<br />
+      2. Le format de la share doit Ãªtre une chaÃ®ne Base64 complÃ¨te<br />
+      3. Le nombre minimal de shares doit Ãªtre atteint pour lancer la rÃ©cupÃ©ration<br />
+      4. Les shares supplÃ©mentaires seront ignorÃ©es automatiquement
     `,
-    recoverBtn: 'Récupérer la phrase',
-    recoverPlaceholder: `Collez ici le contenu des fragments, un par ligne...
+    recoverBtn: 'RÃ©cupÃ©rer la phrase',
+    recoverPlaceholder: `Collez ici le contenu des shares, un par ligne...
 
-Astuce : Collez plusieurs fragments d’un coup, le système gérera automatiquement les retours à la ligne
+Astuce : Collez plusieurs shares dâ€™un coup, le systÃ¨me gÃ©rera automatiquement les retours Ã  la ligne
 
 Exemple de format:
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjIsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9`,
-    waitingForInput: 'En attente des fragments...',
+    waitingForInput: 'En attente des shares...',
 
     pasteInputTab: 'Coller le texte',
-    fileUploadTab: 'Téléverser des fichiers',
+    fileUploadTab: 'TÃ©lÃ©verser des fichiers',
     uploadInstructions: `
       <strong>Instructions :</strong><br />
-      1. Glissez-déposez des fichiers de fragments ici ou cliquez pour sélectionner des fichiers<br />
-      2. Formats pris en charge : .txt (fragments standard) et .gpg (fragments chiffrés)<br />
-      3. Vous pouvez sélectionner plusieurs fichiers à la fois<br />
-      4. Les fichiers seront traités immédiatement après le téléversement
+      1. Glissez-dÃ©posez des fichiers de shares ici ou cliquez pour sÃ©lectionner des fichiers<br />
+      2. Formats pris en charge : .txt (shares standard) et .gpg (shares chiffrÃ©s)<br />
+      3. Vous pouvez sÃ©lectionner plusieurs fichiers Ã  la fois<br />
+      4. Les fichiers seront traitÃ©s immÃ©diatement aprÃ¨s le tÃ©lÃ©versement
     `,
-    dragDropHint: 'Glissez-déposez des fichiers ici ou cliquez pour sélectionner',
-    selectFiles: 'Sélectionner des fichiers',
+    dragDropHint: 'Glissez-dÃ©posez des fichiers ici ou cliquez pour sÃ©lectionner',
+    selectFiles: 'SÃ©lectionner des fichiers',
     supportedFormats: 'Formats pris en charge : .txt, .gpg',
-    uploadedFiles: 'Fichiers téléversés',
+    uploadedFiles: 'Fichiers tÃ©lÃ©versÃ©s',
     clearAllFiles: 'Tout effacer',
-    waitingForUpload: 'En attente de téléversement...',
-    encryptionConfirmation: 'Activer le déchiffrement ?',
+    waitingForUpload: 'En attente de tÃ©lÃ©versement...',
+    encryptionConfirmation: 'Activer le dÃ©chiffrement ?',
     uploadConfirmationMessage:
-      'Souhaitez-vous activer le déchiffrement pour les fichiers téléversés ? Si vous avez des fichiers chiffrés (.gpg), vous devez activer le déchiffrement pour les traiter.',
-    confirmEncryption: 'Oui, activer le déchiffrement',
+      'Souhaitez-vous activer le dÃ©chiffrement pour les fichiers tÃ©lÃ©versÃ©s ? Si vous avez des fichiers chiffrÃ©s (.gpg), vous devez activer le dÃ©chiffrement pour les traiter.',
+    confirmEncryption: 'Oui, activer le dÃ©chiffrement',
     skipEncryption: 'Non, ignorer',
-    encryptionRequired: 'Le déchiffrement est requis pour les fichiers chiffrés',
+    encryptionRequired: 'Le dÃ©chiffrement est requis pour les fichiers chiffrÃ©s',
     insufficientSharesAfterDecryption: (required, provided) =>
-      `Fragments insuffisants après déchiffrement. Au moins ${required} fragments sont nécessaires, ${provided} fournis.`,
+      `Shares insuffisantes aprÃ¨s dÃ©chiffrement. Au moins ${required} shares sont nÃ©cessaires, ${provided} fournies.`,
     sharesDecrypted: (valid, threshold) =>
-      `Déchiffrement réussi de ${valid} fragments (besoin de ${threshold})`,
-    encryptionPasswordTitle: 'Mot de passe de déchiffrement',
+      `DÃ©chiffrement rÃ©ussi de ${valid} shares (besoin de ${threshold})`,
+    encryptionPasswordTitle: 'Mot de passe de dÃ©chiffrement',
     encryptionPasswordDesc:
-      'Saisissez le mot de passe pour déchiffrer vos fichiers chiffrés (.gpg). Tous les fichiers chiffrés utiliseront le même mot de passe.',
-    applyDecryption: 'Appliquer le déchiffrement',
-    skipDecryption: 'Ignorer le déchiffrement',
+      'Saisissez le mot de passe pour dÃ©chiffrer vos fichiers chiffrÃ©s (.gpg). Tous les fichiers chiffrÃ©s utiliseront le mÃªme mot de passe.',
+    applyDecryption: 'Appliquer le dÃ©chiffrement',
+    skipDecryption: 'Ignorer le dÃ©chiffrement',
 
-    sharesTitle: 'Fragments générés',
+    sharesTitle: 'Shares gÃ©nÃ©rÃ©es',
     securityTip:
-      `<strong>Conseil de sécurité :</strong> Stockez ces fragments dans des lieux sûrs distincts. N’importe quels <span id="thresholdDisplay"></span> fragments peuvent reconstituer la phrase complète.`,
+      `<strong>Conseil de sÃ©curitÃ© :</strong> Stockez ces shares dans des lieux sÃ»rs distincts. Nâ€™importe quelles <span id="thresholdDisplay"></span> shares peuvent reconstituer la phrase complÃ¨te.`,
 
     securityNotice:
-      "<strong>Mode sécurité :</strong> Utilisation de l’algorithme professionnel de partage de secret de Shamir, fonctionne entièrement hors ligne, vos données ne quittent jamais votre appareil. Il est recommandé d’utiliser cet outil sans connexion pour une sécurité maximale.",
+      "<strong>Mode sÃ©curitÃ© :</strong> Utilisation de lâ€™algorithme professionnel de partage de secret de Shamir, fonctionne entiÃ¨rement hors ligne, vos donnÃ©es ne quittent jamais votre appareil. Il est recommandÃ© dâ€™utiliser cet outil sans connexion pour une sÃ©curitÃ© maximale.",
 
     errors: {
       fillAllWords: 'Veuillez renseigner tous les mots de la phrase !',
       invalidWord: (index) =>
-        `Le mot ${index} n’est pas un mot BIP39 valide, veuillez en choisir un dans la liste.`,
+        `Le mot ${index} nâ€™est pas un mot BIP39 valide, veuillez en choisir un dans la liste.`,
       invalidWordCleared: (index) =>
-        `<strong>Phrase invalide :</strong> le mot ${index} n’est pas un mot BIP39 valide et a été effacé automatiquement. Veuillez choisir un mot valide dans la liste.`,
-      duplicateWords: (words) => `Mots en double : ${words.join(', ')}. Chaque mot doit être unique.`,
-      invalidShareFormat: 'Format de fragment invalide. Veuillez vérifier votre saisie.',
+        `<strong>Phrase invalide :</strong> le mot ${index} nâ€™est pas un mot BIP39 valide et a Ã©tÃ© effacÃ© automatiquement. Veuillez choisir un mot valide dans la liste.`,
+      duplicateWords: (words) => `Mots en double : ${words.join(', ')}. Chaque mot doit Ãªtre unique.`,
+      invalidShareFormat: 'Format de share invalide. Veuillez vÃ©rifier votre saisie.',
       insufficientShares: (required, provided) =>
-        `Fragments insuffisants. Au moins ${required} fragments sont nécessaires, ${provided} fournis.`,
-      duplicateShares: 'Fragments en double détectés. Chaque fragment doit être unique.',
-      recoveryFailed: 'Échec de la récupération : ',
-      noValidShares: 'Aucune donnée de fragment valide trouvée',
+        `Shares insuffisantes. Au moins ${required} shares sont nÃ©cessaires, ${provided} fournies.`,
+      duplicateShares: 'Shares en double dÃ©tectÃ©es. Chaque share doit Ãªtre unique.',
+      recoveryFailed: 'Ã‰chec de la rÃ©cupÃ©ration : ',
+      noValidShares: 'Aucune donnÃ©e de share valide trouvÃ©e',
       checkShareFormat:
-        'Vérifiez le format des fragments, chaque ligne doit contenir un fragment complet',
-      copyFailed: 'Échec de la copie dans le presse-papiers',
-      downloadFailed: 'Échec du téléchargement, veuillez réessayer',
+        'VÃ©rifiez le format des shares, chaque ligne doit contenir une share complÃ¨te',
+      copyFailed: 'Ã‰chec de la copie dans le presse-papiers',
+      downloadFailed: 'Ã‰chec du tÃ©lÃ©chargement, veuillez rÃ©essayer',
       encryptionFieldsMissing: 'Champs de chiffrement manquants',
       fileTypeNotSupported: 'Type de fichier non pris en charge : {0}',
       fileTooLarge: 'Fichier trop volumineux : {0}',
@@ -331,104 +331,104 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     },
 
     success: {
-      sharesGenerated: 'Fragments générés avec succès ! Conservez-les en lieu sûr.',
-      mnemonicRecovered: 'Phrase mnémonique récupérée avec succès !',
-      copySuccess: 'Copié dans le presse-papiers !',
-      shareDownloaded: (index) => `Fragment ${index} téléchargé`,
-      encryptedShareDownloaded: (index) => `Fragment chifré ${index} téléchargé`,
-      recoverySuccess: 'Récupération réussie !',
+      sharesGenerated: 'Shares gÃ©nÃ©rÃ©es avec succÃ¨s ! Conservez-les en lieu sÃ»r.',
+      mnemonicRecovered: 'Phrase mnÃ©monique rÃ©cupÃ©rÃ©e avec succÃ¨s !',
+      copySuccess: 'CopiÃ© dans le presse-papiers !',
+      shareDownloaded: (index) => `Share ${index} tÃ©lÃ©chargÃ©e`,
+      encryptedShareDownloaded: (index) => `Share chiffrÃ©e ${index} tÃ©lÃ©chargÃ©e`,
+      recoverySuccess: 'RÃ©cupÃ©ration rÃ©ussie !',
     },
 
     warnings: {
-      duplicateWordsDetected: 'Mots en double détectés :',
+      duplicateWordsDetected: 'Mots en double dÃ©tectÃ©s :',
       uniqueWordsNote:
-        'Les mots de la phrase doivent être uniques, veuillez corriger les doublons.',
-      duplicateWords: (words) => `Mots en double détectés : ${words.join(', ')}`,
+        'Les mots de la phrase doivent Ãªtre uniques, veuillez corriger les doublons.',
+      duplicateWords: (words) => `Mots en double dÃ©tectÃ©s : ${words.join(', ')}`,
     },
 
     info: {
-      recovering: 'Récupération en cours...',
+      recovering: 'RÃ©cupÃ©ration en cours...',
       validShares: (valid, threshold) =>
-        `${valid} fragments valides détectés (besoin de ${threshold}), la récupération peut commencer`,
+        `${valid} shares valides dÃ©tectÃ©es (besoin de ${threshold}), la rÃ©cupÃ©ration peut commencer`,
     },
 
     fileStatus: {
       processing: 'Traitement...',
-      valid: 'Fragment valide',
+      valid: 'Share valide',
       invalid: 'Format invalide',
-      encrypted: 'Chiffré - en attente de déchiffrement',
+      encrypted: 'ChiffrÃ© - en attente de dÃ©chiffrement',
       unknown: 'Statut inconnu',
     },
 
     copy: 'Copier',
-    download: 'Télécharger',
-    share: (index) => `Fragment ${index}`,
+    download: 'TÃ©lÃ©charger',
+    share: (index) => `Share ${index}`,
 
     wordLabel: (index) => `${index}. Mot`,
     wordPlaceholder: (index) => `Mot ${index}`,
     position: 'Position',
 
-    shareFilePrefix: 'Fragment',
+    shareFilePrefix: 'Share',
 
-    mnemonic: 'Phrase mnémonique',
-    shares: 'fragments',
-    sharesUsed: 'Fragments utilisés',
+    mnemonic: 'Phrase mnÃ©monique',
+    shares: 'shares',
+    sharesUsed: 'Shares utilisÃ©es',
     need: 'besoin',
-    recoveryTime: 'Temps de récupération',
+    recoveryTime: 'Temps de rÃ©cupÃ©ration',
 
     fileTemplate: {
-      appName: 'GLOV Secure — Mnemonic Shards',
-      shareContent: 'Contenu du fragment',
-      generatedTime: 'Date de génération',
-      securityTips: 'Conseils de sécurité',
-      tip1: 'Conservez ce fichier dans un endroit sûr',
-      tip2: 'Ne partagez pas ce fragment avec des personnes non fiables',
-      tip3: 'N’importe quel nombre spécifié de fragments peut reconstituer la phrase originale',
+      appName: 'GLOV Secure â€” Mnemonic Shards',
+      shareContent: 'Contenu de la share',
+      generatedTime: 'Date de gÃ©nÃ©ration',
+      securityTips: 'Conseils de sÃ©curitÃ©',
+      tip1: 'Conservez ce fichier dans un endroit sÃ»r',
+      tip2: 'Ne partagez pas cette share avec des personnes non fiables',
+      tip3: 'Nâ€™importe quel nombre spÃ©cifiÃ© de shares peut reconstituer la phrase originale',
     },
 
     encryption: {
       title: 'Options de chiffrement',
       enableEncryption: 'Activer le chiffrement',
       encryptionDescription:
-        'Ajoutez une couche de sécurité en chiffrant chaque fragment avec un mot de passe',
+        'Ajoutez une couche de sÃ©curitÃ© en chiffrant chaque share avec un mot de passe',
       passwordLabel: 'Mot de passe',
       confirmPasswordLabel: 'Confirmer le mot de passe',
       passwordPlaceholder: 'Saisir le mot de passe de chiffrement',
       confirmPasswordPlaceholder: 'Confirmer le mot de passe de chiffrement',
       passwordTip:
-        'Assurez-vous de mémoriser votre mot de passe, il sera nécessaire pour récupérer la phrase',
+        'Assurez-vous de mÃ©moriser votre mot de passe, il sera nÃ©cessaire pour rÃ©cupÃ©rer la phrase',
       weakPassword:
-        'Mot de passe trop faible, utilisez au moins 8 caractères avec lettres, chiffres et symboles',
+        'Mot de passe trop faible, utilisez au moins 8 caractÃ¨res avec lettres, chiffres et symboles',
       passwordMismatch: 'Les mots de passe ne correspondent pas',
-      encryptingShares: 'Chiffrement des fragments...',
-      encryptingShare: (index) => `Chiffrement du fragment ${index}...`,
-      encryptedSharesTitle: 'Fragments chiffrés générés',
-      encryptionSuccess: 'Chiffrement réussi !',
-      encryptionFailed: 'Échec du chiffrement : ',
-      decryptionFailed: 'Échec du déchiffrement : ',
-      invalidPassword: 'Mot de passe invalide, veuillez vérifier et réessayer',
+      encryptingShares: 'Chiffrement des shares...',
+      encryptingShare: (index) => `Chiffrement de la share ${index}...`,
+      encryptedSharesTitle: 'Shares chiffrÃ©es gÃ©nÃ©rÃ©es',
+      encryptionSuccess: 'Chiffrement rÃ©ussi !',
+      encryptionFailed: 'Ã‰chec du chiffrement : ',
+      decryptionFailed: 'Ã‰chec du dÃ©chiffrement : ',
+      invalidPassword: 'Mot de passe invalide, veuillez vÃ©rifier et rÃ©essayer',
       encryptionInfo:
-        'Chaque fragment sera chiffré au format OpenPGP, compatible avec les outils GPG. Le même mot de passe sera requis lors de la récupération.',
+        'Chaque share sera chiffrÃ©e au format OpenPGP, compatible avec les outils GPG. Le mÃªme mot de passe sera requis lors de la rÃ©cupÃ©ration.',
       securityNotice:
-        'Les fragments chiffrés offrent une sécurité supplémentaire s’ils sont stockés dans des lieux potentiellement compromis.',
-      passwordRequired: 'Le mot de passe est requis pour le déchiffrement',
-      decryptingShares: 'Déchiffrement des fragments...',
+        'Les shares chiffrÃ©es offrent une sÃ©curitÃ© supplÃ©mentaire si elles sont stockÃ©es dans des lieux potentiellement compromis.',
+      passwordRequired: 'Le mot de passe est requis pour le dÃ©chiffrement',
+      decryptingShares: 'DÃ©chiffrement des shares...',
       encryptedShareNotice:
-        'FRAGMENT CHIFFRÉ - Ce fragment est chiffré au format OpenPGP et nécessite un mot de passe pour la récupération',
+        'SHARE CHIFFRÃ‰E - Cette share est chiffrÃ©e au format OpenPGP et nÃ©cessite un mot de passe pour la rÃ©cupÃ©ration',
       encryptedShareTip:
-        'Ce fragment est chiffré au format OpenPGP (compatible GPG). Vous devrez utiliser le même mot de passe qu’à la génération pour récupérer la phrase.',
+        'Cette share est chiffrÃ©e au format OpenPGP (compatible GPG). Vous devrez utiliser le mÃªme mot de passe quâ€™Ã  la gÃ©nÃ©ration pour rÃ©cupÃ©rer la phrase.',
       gpgCompatibility:
-        'Ce fragment chiffré peut être déchiffré avec la commande GPG : gpg --decrypt shard1.gpg',
-      encryptedFileDetected: 'Fichiers chiffrés détectés. Mot de passe requis pour le déchiffrement.',
-      noEncryptedFiles: 'Aucun fichier chiffré à déchiffrer',
-      requiresHttps: 'Les fichiers chiffrés (.gpg) sont désactivés en HTTP. Utilise HTTPS (contexte sécurisé) pour activer le déchiffrement.',
+        'Cette share chiffrÃ©e peut Ãªtre dÃ©chiffrÃ©e avec la commande GPG : gpg --decrypt shard1.gpg',
+      encryptedFileDetected: 'Fichiers chiffrÃ©s dÃ©tectÃ©s. Mot de passe requis pour le dÃ©chiffrement.',
+      noEncryptedFiles: 'Aucun fichier chiffrÃ© Ã  dÃ©chiffrer',
+      requiresHttps: 'Les fichiers chiffrÃ©s (.gpg) sont dÃ©sactivÃ©s en HTTP. Utilise HTTPS (contexte sÃ©curisÃ©) pour activer le dÃ©chiffrement.',
     },
 
     passwordDialog: {
-      title: 'Saisir le mot de passe de déchiffrement',
+      title: 'Saisir le mot de passe de dÃ©chiffrement',
       retryTitle: 'Mot de passe incorrect',
-      message: 'Veuillez saisir le mot de passe pour déchiffrer les fragments.',
-      retryMessage: 'Le mot de passe saisi est incorrect. Veuillez réessayer.',
+      message: 'Veuillez saisir le mot de passe pour dÃ©chiffrer les shares.',
+      retryMessage: 'Le mot de passe saisi est incorrect. Veuillez rÃ©essayer.',
       confirm: 'Confirmer',
       cancel: 'Annuler',
     },
@@ -438,175 +438,175 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
 
   // Optional Chinese pack (kept for completeness)
   [LANGUAGES.ZH]: {
-    appTitle: 'GLOV Secure — Mnemonic Shards',
-    appDescription: '安全地将助记词分割成多个分片，任意指定数量的分片即可恢复原始助记词',
-    configTitle: '配置选项',
-    wordCountLabel: '助记词数量',
-    words12: '12 个单词',
-    words24: '24 个单词',
-    totalSharesLabel: '分片总数',
-    thresholdLabel: '恢复所需分片数',
-    sharesOption: (count) => `${count} 个分片`,
-    inputTitle: '输入助记词',
-    generateBtn: '生成分片',
-    recoverTitle: '恢复助记词',
+    appTitle: 'GLOV Secure â€” Mnemonic Shards',
+    appDescription: 'å®‰å…¨åœ°å°†åŠ©è®°è¯åˆ†å‰²æˆå¤šä¸ªåˆ†ç‰‡ï¼Œä»»æ„æŒ‡å®šæ•°é‡çš„åˆ†ç‰‡å³å¯æ¢å¤åŽŸå§‹åŠ©è®°è¯',
+    configTitle: 'é…ç½®é€‰é¡¹',
+    wordCountLabel: 'åŠ©è®°è¯æ•°é‡',
+    words12: '12 ä¸ªå•è¯',
+    words24: '24 ä¸ªå•è¯',
+    totalSharesLabel: 'åˆ†ç‰‡æ€»æ•°',
+    thresholdLabel: 'æ¢å¤æ‰€éœ€åˆ†ç‰‡æ•°',
+    sharesOption: (count) => `${count} ä¸ªåˆ†ç‰‡`,
+    inputTitle: 'è¾“å…¥åŠ©è®°è¯',
+    generateBtn: 'ç”Ÿæˆåˆ†ç‰‡',
+    recoverTitle: 'æ¢å¤åŠ©è®°è¯',
     recoverInstructions: `
-      <strong>使用说明：</strong><br />
-      1. 将每个分片粘贴到下方文本框中，每行一个分片<br />
-      2. 分片格式应为完整的 Base64 编码字符串<br />
-      3. 至少需要达到设定的最小分片数量才能恢复<br />
-      4. 多余的分片会被自动忽略
+      <strong>ä½¿ç”¨è¯´æ˜Žï¼š</strong><br />
+      1. å°†æ¯ä¸ªåˆ†ç‰‡ç²˜è´´åˆ°ä¸‹æ–¹æ–‡æœ¬æ¡†ä¸­ï¼Œæ¯è¡Œä¸€ä¸ªåˆ†ç‰‡<br />
+      2. åˆ†ç‰‡æ ¼å¼åº”ä¸ºå®Œæ•´çš„ Base64 ç¼–ç å­—ç¬¦ä¸²<br />
+      3. è‡³å°‘éœ€è¦è¾¾åˆ°è®¾å®šçš„æœ€å°åˆ†ç‰‡æ•°é‡æ‰èƒ½æ¢å¤<br />
+      4. å¤šä½™çš„åˆ†ç‰‡ä¼šè¢«è‡ªåŠ¨å¿½ç•¥
     `,
-    recoverBtn: '恢复助记词',
-    recoverPlaceholder: `请在此处粘贴分片内容，每行一个分片...
+    recoverBtn: 'æ¢å¤åŠ©è®°è¯',
+    recoverPlaceholder: `è¯·åœ¨æ­¤å¤„ç²˜è´´åˆ†ç‰‡å†…å®¹ï¼Œæ¯è¡Œä¸€ä¸ªåˆ†ç‰‡...
 
-💡 提示：直接粘贴多个分片，系统会自动处理换行
+ðŸ’¡ æç¤ºï¼šç›´æŽ¥ç²˜è´´å¤šä¸ªåˆ†ç‰‡ï¼Œç³»ç»Ÿä¼šè‡ªåŠ¨å¤„ç†æ¢è¡Œ
 
-示例格式：
+ç¤ºä¾‹æ ¼å¼ï¼š
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjIsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9`,
-    waitingForInput: '等待输入分片...',
-    pasteInputTab: '粘贴输入',
-    fileUploadTab: '文件上传',
+    waitingForInput: 'ç­‰å¾…è¾“å…¥åˆ†ç‰‡...',
+    pasteInputTab: 'ç²˜è´´è¾“å…¥',
+    fileUploadTab: 'æ–‡ä»¶ä¸Šä¼ ',
     uploadInstructions: `
-      <strong>使用说明：</strong><br />
-      1. 拖拽分片文件到此处或点击选择文件<br />
-      2. 支持格式：.txt（标准分片）和 .gpg（加密分片）<br />
-      3. 可以一次选择多个文件<br />
-      4. 文件上传后会立即处理
+      <strong>ä½¿ç”¨è¯´æ˜Žï¼š</strong><br />
+      1. æ‹–æ‹½åˆ†ç‰‡æ–‡ä»¶åˆ°æ­¤å¤„æˆ–ç‚¹å‡»é€‰æ‹©æ–‡ä»¶<br />
+      2. æ”¯æŒæ ¼å¼ï¼š.txtï¼ˆæ ‡å‡†åˆ†ç‰‡ï¼‰å’Œ .gpgï¼ˆåŠ å¯†åˆ†ç‰‡ï¼‰<br />
+      3. å¯ä»¥ä¸€æ¬¡é€‰æ‹©å¤šä¸ªæ–‡ä»¶<br />
+      4. æ–‡ä»¶ä¸Šä¼ åŽä¼šç«‹å³å¤„ç†
     `,
-    dragDropHint: '拖拽文件到此处或点击选择',
-    selectFiles: '选择文件',
-    supportedFormats: '支持格式：.txt, .gpg',
-    uploadedFiles: '已上传文件',
-    clearAllFiles: '清空全部',
-    waitingForUpload: '等待文件上传...',
-    encryptionConfirmation: '启用解密？',
+    dragDropHint: 'æ‹–æ‹½æ–‡ä»¶åˆ°æ­¤å¤„æˆ–ç‚¹å‡»é€‰æ‹©',
+    selectFiles: 'é€‰æ‹©æ–‡ä»¶',
+    supportedFormats: 'æ”¯æŒæ ¼å¼ï¼š.txt, .gpg',
+    uploadedFiles: 'å·²ä¸Šä¼ æ–‡ä»¶',
+    clearAllFiles: 'æ¸…ç©ºå…¨éƒ¨',
+    waitingForUpload: 'ç­‰å¾…æ–‡ä»¶ä¸Šä¼ ...',
+    encryptionConfirmation: 'å¯ç”¨è§£å¯†ï¼Ÿ',
     uploadConfirmationMessage:
-      '是否为上传的文件启用解密？如果您有加密文件(.gpg)，需要启用解密才能处理它们。',
-    confirmEncryption: '是，启用解密',
-    skipEncryption: '否，跳过解密',
-    encryptionRequired: '加密文件需要解密',
+      'æ˜¯å¦ä¸ºä¸Šä¼ çš„æ–‡ä»¶å¯ç”¨è§£å¯†ï¼Ÿå¦‚æžœæ‚¨æœ‰åŠ å¯†æ–‡ä»¶(.gpg)ï¼Œéœ€è¦å¯ç”¨è§£å¯†æ‰èƒ½å¤„ç†å®ƒä»¬ã€‚',
+    confirmEncryption: 'æ˜¯ï¼Œå¯ç”¨è§£å¯†',
+    skipEncryption: 'å¦ï¼Œè·³è¿‡è§£å¯†',
+    encryptionRequired: 'åŠ å¯†æ–‡ä»¶éœ€è¦è§£å¯†',
     insufficientSharesAfterDecryption: (required, provided) =>
-      `解密后分片数量不足。至少需要 ${required} 个分片，但只有 ${provided} 个。`,
-    sharesDecrypted: (valid, threshold) => `成功解密 ${valid} 个分片（需要 ${threshold} 个）`,
-    encryptionPasswordTitle: '解密密码',
-    encryptionPasswordDesc: '请输入密码以解密您的加密文件(.gpg)。所有加密文件将使用相同的密码。',
-    applyDecryption: '应用解密',
-    skipDecryption: '跳过解密',
-    sharesTitle: '生成的分片',
+      `è§£å¯†åŽåˆ†ç‰‡æ•°é‡ä¸è¶³ã€‚è‡³å°‘éœ€è¦ ${required} ä¸ªåˆ†ç‰‡ï¼Œä½†åªæœ‰ ${provided} ä¸ªã€‚`,
+    sharesDecrypted: (valid, threshold) => `æˆåŠŸè§£å¯† ${valid} ä¸ªåˆ†ç‰‡ï¼ˆéœ€è¦ ${threshold} ä¸ªï¼‰`,
+    encryptionPasswordTitle: 'è§£å¯†å¯†ç ',
+    encryptionPasswordDesc: 'è¯·è¾“å…¥å¯†ç ä»¥è§£å¯†æ‚¨çš„åŠ å¯†æ–‡ä»¶(.gpg)ã€‚æ‰€æœ‰åŠ å¯†æ–‡ä»¶å°†ä½¿ç”¨ç›¸åŒçš„å¯†ç ã€‚',
+    applyDecryption: 'åº”ç”¨è§£å¯†',
+    skipDecryption: 'è·³è¿‡è§£å¯†',
+    sharesTitle: 'ç”Ÿæˆçš„åˆ†ç‰‡',
     securityTip:
-      `<strong>安全提示：</strong> 请将这些分片分别保存在不同的安全位置。任意 <span id="thresholdDisplay"></span> 个分片即可恢复完整的助记词。`,
+      `<strong>å®‰å…¨æç¤ºï¼š</strong> è¯·å°†è¿™äº›åˆ†ç‰‡åˆ†åˆ«ä¿å­˜åœ¨ä¸åŒçš„å®‰å…¨ä½ç½®ã€‚ä»»æ„ <span id="thresholdDisplay"></span> ä¸ªåˆ†ç‰‡å³å¯æ¢å¤å®Œæ•´çš„åŠ©è®°è¯ã€‚`,
     securityNotice:
-      '<strong>安全模式：</strong> 使用专业级 Shamir 秘密分享算法，完全离线运行，数据不会离开您的设备。建议在断网环境中使用以获得最高安全性。',
+      '<strong>å®‰å…¨æ¨¡å¼ï¼š</strong> ä½¿ç”¨ä¸“ä¸šçº§ Shamir ç§˜å¯†åˆ†äº«ç®—æ³•ï¼Œå®Œå…¨ç¦»çº¿è¿è¡Œï¼Œæ•°æ®ä¸ä¼šç¦»å¼€æ‚¨çš„è®¾å¤‡ã€‚å»ºè®®åœ¨æ–­ç½‘çŽ¯å¢ƒä¸­ä½¿ç”¨ä»¥èŽ·å¾—æœ€é«˜å®‰å…¨æ€§ã€‚',
     errors: {
-      fillAllWords: '请填写所有助记词！',
+      fillAllWords: 'è¯·å¡«å†™æ‰€æœ‰åŠ©è®°è¯ï¼',
       invalidWord: (index) =>
-        `第 ${index} 个单词不是有效的 BIP39 单词，请从建议列表中选择有效的单词。`,
+        `ç¬¬ ${index} ä¸ªå•è¯ä¸æ˜¯æœ‰æ•ˆçš„ BIP39 å•è¯ï¼Œè¯·ä»Žå»ºè®®åˆ—è¡¨ä¸­é€‰æ‹©æœ‰æ•ˆçš„å•è¯ã€‚`,
       invalidWordCleared: (index) =>
-        `<strong>无效助记词：</strong> 第 ${index} 个输入框中的单词不是有效的 BIP39 单词，已自动清空。请从建议列表中选择有效的单词。`,
-      duplicateWords: (words) => `发现重复单词：${words.join(', ')}。每个单词应该是唯一的。`,
-      invalidShareFormat: '无效的分片格式。请检查您的输入。',
+        `<strong>æ— æ•ˆåŠ©è®°è¯ï¼š</strong> ç¬¬ ${index} ä¸ªè¾“å…¥æ¡†ä¸­çš„å•è¯ä¸æ˜¯æœ‰æ•ˆçš„ BIP39 å•è¯ï¼Œå·²è‡ªåŠ¨æ¸…ç©ºã€‚è¯·ä»Žå»ºè®®åˆ—è¡¨ä¸­é€‰æ‹©æœ‰æ•ˆçš„å•è¯ã€‚`,
+      duplicateWords: (words) => `å‘çŽ°é‡å¤å•è¯ï¼š${words.join(', ')}ã€‚æ¯ä¸ªå•è¯åº”è¯¥æ˜¯å”¯ä¸€çš„ã€‚`,
+      invalidShareFormat: 'æ— æ•ˆçš„åˆ†ç‰‡æ ¼å¼ã€‚è¯·æ£€æŸ¥æ‚¨çš„è¾“å…¥ã€‚',
       insufficientShares: (required, provided) =>
-        `分片数量不足。至少需要 ${required} 个分片，但只提供了 ${provided} 个。`,
-      duplicateShares: '检测到重复的分片。每个分片应该是唯一的。',
-      recoveryFailed: '恢复失败：',
-      noValidShares: '没有找到有效的分片数据',
-      checkShareFormat: '请检查分片格式是否正确，确保每行一个完整的分片',
-      copyFailed: '复制到剪贴板失败',
-      downloadFailed: '下载失败，请重试',
-      encryptionFieldsMissing: '加密字段缺失',
-      fileTypeNotSupported: '不支持的文件类型：{0}',
-      fileTooLarge: '文件过大：{0}',
-      duplicateFile: '重复文件：{0}',
+        `åˆ†ç‰‡æ•°é‡ä¸è¶³ã€‚è‡³å°‘éœ€è¦ ${required} ä¸ªåˆ†ç‰‡ï¼Œä½†åªæä¾›äº† ${provided} ä¸ªã€‚`,
+      duplicateShares: 'æ£€æµ‹åˆ°é‡å¤çš„åˆ†ç‰‡ã€‚æ¯ä¸ªåˆ†ç‰‡åº”è¯¥æ˜¯å”¯ä¸€çš„ã€‚',
+      recoveryFailed: 'æ¢å¤å¤±è´¥ï¼š',
+      noValidShares: 'æ²¡æœ‰æ‰¾åˆ°æœ‰æ•ˆçš„åˆ†ç‰‡æ•°æ®',
+      checkShareFormat: 'è¯·æ£€æŸ¥åˆ†ç‰‡æ ¼å¼æ˜¯å¦æ­£ç¡®ï¼Œç¡®ä¿æ¯è¡Œä¸€ä¸ªå®Œæ•´çš„åˆ†ç‰‡',
+      copyFailed: 'å¤åˆ¶åˆ°å‰ªè´´æ¿å¤±è´¥',
+      downloadFailed: 'ä¸‹è½½å¤±è´¥ï¼Œè¯·é‡è¯•',
+      encryptionFieldsMissing: 'åŠ å¯†å­—æ®µç¼ºå¤±',
+      fileTypeNotSupported: 'ä¸æ”¯æŒçš„æ–‡ä»¶ç±»åž‹ï¼š{0}',
+      fileTooLarge: 'æ–‡ä»¶è¿‡å¤§ï¼š{0}',
+      duplicateFile: 'é‡å¤æ–‡ä»¶ï¼š{0}',
     },
     success: {
-      sharesGenerated: '分片生成成功！请安全保存这些分片。',
-      mnemonicRecovered: '助记词恢复成功！',
-      copySuccess: '已复制到剪贴板！',
-      shareDownloaded: (index) => `分片 ${index} 已下载`,
-      encryptedShareDownloaded: (index) => `加密分片 ${index} 已下载`,
-      recoverySuccess: '恢复成功！',
+      sharesGenerated: 'åˆ†ç‰‡ç”ŸæˆæˆåŠŸï¼è¯·å®‰å…¨ä¿å­˜è¿™äº›åˆ†ç‰‡ã€‚',
+      mnemonicRecovered: 'åŠ©è®°è¯æ¢å¤æˆåŠŸï¼',
+      copySuccess: 'å·²å¤åˆ¶åˆ°å‰ªè´´æ¿ï¼',
+      shareDownloaded: (index) => `åˆ†ç‰‡ ${index} å·²ä¸‹è½½`,
+      encryptedShareDownloaded: (index) => `åŠ å¯†åˆ†ç‰‡ ${index} å·²ä¸‹è½½`,
+      recoverySuccess: 'æ¢å¤æˆåŠŸï¼',
     },
     warnings: {
-      duplicateWordsDetected: '检测到重复单词：',
-      uniqueWordsNote: '助记词中的单词应该是唯一的，请检查并修改重复的单词。',
-      duplicateWords: (words) => `检测到重复单词：${words.join(', ')}`,
+      duplicateWordsDetected: 'æ£€æµ‹åˆ°é‡å¤å•è¯ï¼š',
+      uniqueWordsNote: 'åŠ©è®°è¯ä¸­çš„å•è¯åº”è¯¥æ˜¯å”¯ä¸€çš„ï¼Œè¯·æ£€æŸ¥å¹¶ä¿®æ”¹é‡å¤çš„å•è¯ã€‚',
+      duplicateWords: (words) => `æ£€æµ‹åˆ°é‡å¤å•è¯ï¼š${words.join(', ')}`,
     },
     info: {
-      recovering: '正在恢复...',
-      validShares: (valid, threshold) => `检测到 ${valid} 个有效分片（需要 ${threshold} 个），可以开始恢复`,
+      recovering: 'æ­£åœ¨æ¢å¤...',
+      validShares: (valid, threshold) => `æ£€æµ‹åˆ° ${valid} ä¸ªæœ‰æ•ˆåˆ†ç‰‡ï¼ˆéœ€è¦ ${threshold} ä¸ªï¼‰ï¼Œå¯ä»¥å¼€å§‹æ¢å¤`,
     },
     fileStatus: {
-      processing: '处理中...',
-      valid: '有效分片',
-      invalid: '格式无效',
-      encrypted: '加密文件 - 等待解密',
-      unknown: '未知状态',
+      processing: 'å¤„ç†ä¸­...',
+      valid: 'æœ‰æ•ˆåˆ†ç‰‡',
+      invalid: 'æ ¼å¼æ— æ•ˆ',
+      encrypted: 'åŠ å¯†æ–‡ä»¶ - ç­‰å¾…è§£å¯†',
+      unknown: 'æœªçŸ¥çŠ¶æ€',
     },
-    copy: '复制',
-    download: '下载',
-    share: (index) => `分片 ${index}`,
-    wordLabel: (index) => `${index}. 单词`,
-    wordPlaceholder: (index) => `第 ${index} 个单词`,
-    position: '位置',
-    shareFilePrefix: '分片',
-    mnemonic: '助记词',
-    shares: '个',
-    sharesUsed: '使用分片数',
-    need: '需要',
-    recoveryTime: '恢复时间',
+    copy: 'å¤åˆ¶',
+    download: 'ä¸‹è½½',
+    share: (index) => `åˆ†ç‰‡ ${index}`,
+    wordLabel: (index) => `${index}. å•è¯`,
+    wordPlaceholder: (index) => `ç¬¬ ${index} ä¸ªå•è¯`,
+    position: 'ä½ç½®',
+    shareFilePrefix: 'åˆ†ç‰‡',
+    mnemonic: 'åŠ©è®°è¯',
+    shares: 'ä¸ª',
+    sharesUsed: 'ä½¿ç”¨åˆ†ç‰‡æ•°',
+    need: 'éœ€è¦',
+    recoveryTime: 'æ¢å¤æ—¶é—´',
     fileTemplate: {
-      appName: 'GLOV Secure — Mnemonic Shards',
-      shareContent: '分片内容',
-      generatedTime: '生成时间',
-      securityTips: '安全提示',
-      tip1: '请将此文件保存在安全的位置',
-      tip2: '不要将分片分享给不信任的人',
-      tip3: '任意指定数量的分片即可恢复原始助记词',
+      appName: 'GLOV Secure â€” Mnemonic Shards',
+      shareContent: 'åˆ†ç‰‡å†…å®¹',
+      generatedTime: 'ç”Ÿæˆæ—¶é—´',
+      securityTips: 'å®‰å…¨æç¤º',
+      tip1: 'è¯·å°†æ­¤æ–‡ä»¶ä¿å­˜åœ¨å®‰å…¨çš„ä½ç½®',
+      tip2: 'ä¸è¦å°†åˆ†ç‰‡åˆ†äº«ç»™ä¸ä¿¡ä»»çš„äºº',
+      tip3: 'ä»»æ„æŒ‡å®šæ•°é‡çš„åˆ†ç‰‡å³å¯æ¢å¤åŽŸå§‹åŠ©è®°è¯',
     },
     encryption: {
-      title: '加密选项',
-      enableEncryption: '启用加密',
-      encryptionDescription: '通过密码对每个分片进行加密，增加额外的安全层',
-      passwordLabel: '密码',
-      confirmPasswordLabel: '确认密码',
-      passwordPlaceholder: '请输入加密密码',
-      confirmPasswordPlaceholder: '请确认加密密码',
-      passwordTip: '请务必记住您的密码，恢复助记词时将需要此密码',
-      weakPassword: '密码过于简单，请使用至少8个字符，包含字母、数字和符号的组合',
-      passwordMismatch: '两次输入的密码不匹配',
-      encryptingShares: '正在加密分片...',
-      encryptingShare: (index) => `正在加密分片 ${index}...`,
-      encryptedSharesTitle: '生成的加密分片',
-      encryptionSuccess: '分片加密成功！',
-      encryptionFailed: '加密失败：',
-      decryptionFailed: '解密失败：',
-      invalidPassword: '密码无效，请检查后重试',
+      title: 'åŠ å¯†é€‰é¡¹',
+      enableEncryption: 'å¯ç”¨åŠ å¯†',
+      encryptionDescription: 'é€šè¿‡å¯†ç å¯¹æ¯ä¸ªåˆ†ç‰‡è¿›è¡ŒåŠ å¯†ï¼Œå¢žåŠ é¢å¤–çš„å®‰å…¨å±‚',
+      passwordLabel: 'å¯†ç ',
+      confirmPasswordLabel: 'ç¡®è®¤å¯†ç ',
+      passwordPlaceholder: 'è¯·è¾“å…¥åŠ å¯†å¯†ç ',
+      confirmPasswordPlaceholder: 'è¯·ç¡®è®¤åŠ å¯†å¯†ç ',
+      passwordTip: 'è¯·åŠ¡å¿…è®°ä½æ‚¨çš„å¯†ç ï¼Œæ¢å¤åŠ©è®°è¯æ—¶å°†éœ€è¦æ­¤å¯†ç ',
+      weakPassword: 'å¯†ç è¿‡äºŽç®€å•ï¼Œè¯·ä½¿ç”¨è‡³å°‘8ä¸ªå­—ç¬¦ï¼ŒåŒ…å«å­—æ¯ã€æ•°å­—å’Œç¬¦å·çš„ç»„åˆ',
+      passwordMismatch: 'ä¸¤æ¬¡è¾“å…¥çš„å¯†ç ä¸åŒ¹é…',
+      encryptingShares: 'æ­£åœ¨åŠ å¯†åˆ†ç‰‡...',
+      encryptingShare: (index) => `æ­£åœ¨åŠ å¯†åˆ†ç‰‡ ${index}...`,
+      encryptedSharesTitle: 'ç”Ÿæˆçš„åŠ å¯†åˆ†ç‰‡',
+      encryptionSuccess: 'åˆ†ç‰‡åŠ å¯†æˆåŠŸï¼',
+      encryptionFailed: 'åŠ å¯†å¤±è´¥ï¼š',
+      decryptionFailed: 'è§£å¯†å¤±è´¥ï¼š',
+      invalidPassword: 'å¯†ç æ— æ•ˆï¼Œè¯·æ£€æŸ¥åŽé‡è¯•',
       encryptionInfo:
-        '每个分片将使用OpenPGP格式加密，兼容GPG工具。恢复时将需要相同的密码。',
+        'æ¯ä¸ªåˆ†ç‰‡å°†ä½¿ç”¨OpenPGPæ ¼å¼åŠ å¯†ï¼Œå…¼å®¹GPGå·¥å…·ã€‚æ¢å¤æ—¶å°†éœ€è¦ç›¸åŒçš„å¯†ç ã€‚',
       securityNotice:
-        '加密分片在存储在可能存在风险的位置时提供额外的安全性。',
-      passwordRequired: '解密需要密码',
-      decryptingShares: '正在解密分片...',
+        'åŠ å¯†åˆ†ç‰‡åœ¨å­˜å‚¨åœ¨å¯èƒ½å­˜åœ¨é£Žé™©çš„ä½ç½®æ—¶æä¾›é¢å¤–çš„å®‰å…¨æ€§ã€‚',
+      passwordRequired: 'è§£å¯†éœ€è¦å¯†ç ',
+      decryptingShares: 'æ­£åœ¨è§£å¯†åˆ†ç‰‡...',
       encryptedShareNotice:
-        '加密分片 - 此分片使用OpenPGP格式加密，恢复时需要密码',
+        'åŠ å¯†åˆ†ç‰‡ - æ­¤åˆ†ç‰‡ä½¿ç”¨OpenPGPæ ¼å¼åŠ å¯†ï¼Œæ¢å¤æ—¶éœ€è¦å¯†ç ',
       encryptedShareTip:
-        '此分片使用OpenPGP格式加密（兼容GPG）。恢复助记词时需要使用生成时相同的密码。',
-      gpgCompatibility: '此加密分片可使用GPG命令解密：gpg --decrypt 分片1.gpg',
-      encryptedFileDetected: '检测到加密文件，需要输入密码进行解密',
-      noEncryptedFiles: '没有需要解密的文件',
+        'æ­¤åˆ†ç‰‡ä½¿ç”¨OpenPGPæ ¼å¼åŠ å¯†ï¼ˆå…¼å®¹GPGï¼‰ã€‚æ¢å¤åŠ©è®°è¯æ—¶éœ€è¦ä½¿ç”¨ç”Ÿæˆæ—¶ç›¸åŒçš„å¯†ç ã€‚',
+      gpgCompatibility: 'æ­¤åŠ å¯†åˆ†ç‰‡å¯ä½¿ç”¨GPGå‘½ä»¤è§£å¯†ï¼šgpg --decrypt åˆ†ç‰‡1.gpg',
+      encryptedFileDetected: 'æ£€æµ‹åˆ°åŠ å¯†æ–‡ä»¶ï¼Œéœ€è¦è¾“å…¥å¯†ç è¿›è¡Œè§£å¯†',
+      noEncryptedFiles: 'æ²¡æœ‰éœ€è¦è§£å¯†çš„æ–‡ä»¶',
     },
     passwordDialog: {
-      title: '输入解密密码',
-      retryTitle: '密码错误',
-      message: '请输入密码以解密分片。',
-      retryMessage: '您输入的密码不正确，请重试。',
-      confirm: '确认',
-      cancel: '取消',
+      title: 'è¾“å…¥è§£å¯†å¯†ç ',
+      retryTitle: 'å¯†ç é”™è¯¯',
+      message: 'è¯·è¾“å…¥å¯†ç ä»¥è§£å¯†åˆ†ç‰‡ã€‚',
+      retryMessage: 'æ‚¨è¾“å…¥çš„å¯†ç ä¸æ­£ç¡®ï¼Œè¯·é‡è¯•ã€‚',
+      confirm: 'ç¡®è®¤',
+      cancel: 'å–æ¶ˆ',
     },
-    language: '语言',
+    language: 'è¯­è¨€',
   },
 };
 
