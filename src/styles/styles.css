@@ -1995,6 +1995,11 @@ select:hover {
   font-size: var(--font-size-sm);
 }
 
+.footer-version {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
 .footer a {
   color: var(--color-text-secondary);
   text-decoration: none;
