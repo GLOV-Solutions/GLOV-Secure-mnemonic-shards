@@ -237,44 +237,44 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
   [LANGUAGES.FR]: {
     appTitle: 'GLOV Secure â€” Mnemonic Shards',
     appDescription:
-      'Divisez en toute sÃ©curitÃ© votre phrase mnÃ©monique en plusieurs parts. Nâ€™importe quel nombre spÃ©cifiÃ© de parts peut reconstituer la phrase originale.',
+      'Divisez en toute sÃ©curitÃ© votre phrase mnÃ©monique en plusieurs shares. Nâ€™importe quel nombre spÃ©cifiÃ© de shares peut reconstituer la phrase originale.',
 
     configTitle: 'Options de configuration',
     wordCountLabel: 'Nombre de mots de la phrase mnÃ©monique',
     words12: '12 mots',
     words24: '24 mots',
-    totalSharesLabel: 'Nombre total de parts',
-    thresholdLabel: 'Parts requises pour la rÃ©cupÃ©ration',
-    sharesOption: (count) => `${count} parts`,
+    totalSharesLabel: 'Nombre total de shares',
+    thresholdLabel: 'Shares requises pour la rÃ©cupÃ©ration',
+    sharesOption: (count) => `${count} shares`,
 
     inputTitle: 'Saisir la phrase mnÃ©monique',
-    generateBtn: 'GÃ©nÃ©rer les parts',
+    generateBtn: 'GÃ©nÃ©rer les shares',
 
     recoverTitle: 'RÃ©cupÃ©rer la phrase mnÃ©monique',
     recoverInstructions: `
       <strong>Instructions :</strong><br />
-      1. Collez chaque part dans la zone ci-dessous, une part par ligne<br />
-      2. Le format de la part doit Ãªtre une chaÃ®ne Base64 complÃ¨te<br />
-      3. Le nombre minimal de parts doit Ãªtre atteint pour lancer la rÃ©cupÃ©ration<br />
-      4. Les parts supplÃ©mentaires seront ignorÃ©es automatiquement
+      1. Collez chaque share dans la zone ci-dessous, une share par ligne<br />
+      2. Le format de la share doit Ãªtre une chaÃ®ne Base64 complÃ¨te<br />
+      3. Le nombre minimal de shares doit Ãªtre atteint pour lancer la rÃ©cupÃ©ration<br />
+      4. Les shares supplÃ©mentaires seront ignorÃ©es automatiquement
     `,
     recoverBtn: 'RÃ©cupÃ©rer la phrase',
-    recoverPlaceholder: `Collez ici le contenu des parts, un par ligne...
+    recoverPlaceholder: `Collez ici le contenu des shares, un par ligne...
 
-Astuce : Collez plusieurs parts dâ€™un coup, le systÃ¨me gÃ©rera automatiquement les retours Ã  la ligne
+Astuce : Collez plusieurs shares dâ€™un coup, le systÃ¨me gÃ©rera automatiquement les retours Ã  la ligne
 
 Exemple de format:
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjEsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjIsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9
 eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eiJ9`,
-    waitingForInput: 'En attente des parts...',
+    waitingForInput: 'En attente des shares...',
 
     pasteInputTab: 'Coller le texte',
     fileUploadTab: 'TÃ©lÃ©verser des fichiers',
     uploadInstructions: `
       <strong>Instructions :</strong><br />
-      1. Glissez-dÃ©posez des fichiers de parts ici ou cliquez pour sÃ©lectionner des fichiers<br />
-      2. Formats pris en charge : .txt (parts standard) et .gpg (parts chiffrÃ©s)<br />
+      1. Glissez-dÃ©posez des fichiers de shares ici ou cliquez pour sÃ©lectionner des fichiers<br />
+      2. Formats pris en charge : .txt (shares standard) et .gpg (shares chiffrÃ©s)<br />
       3. Vous pouvez sÃ©lectionner plusieurs fichiers Ã  la fois<br />
       4. Les fichiers seront traitÃ©s immÃ©diatement aprÃ¨s le tÃ©lÃ©versement
     `,
@@ -291,18 +291,18 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     skipEncryption: 'Non, ignorer',
     encryptionRequired: 'Le dÃ©chiffrement est requis pour les fichiers chiffrÃ©s',
     insufficientSharesAfterDecryption: (required, provided) =>
-      `Parts insuffisantes aprÃ¨s dÃ©chiffrement. Au moins ${required} parts sont nÃ©cessaires, ${provided} fournies.`,
+      `Shares insuffisantes aprÃ¨s dÃ©chiffrement. Au moins ${required} shares sont nÃ©cessaires, ${provided} fournies.`,
     sharesDecrypted: (valid, threshold) =>
-      `DÃ©chiffrement rÃ©ussi de ${valid} parts (besoin de ${threshold})`,
+      `DÃ©chiffrement rÃ©ussi de ${valid} shares (besoin de ${threshold})`,
     encryptionPasswordTitle: 'Mot de passe de dÃ©chiffrement',
     encryptionPasswordDesc:
       'Saisissez le mot de passe pour dÃ©chiffrer vos fichiers chiffrÃ©s (.gpg). Tous les fichiers chiffrÃ©s utiliseront le mÃªme mot de passe.',
     applyDecryption: 'Appliquer le dÃ©chiffrement',
     skipDecryption: 'Ignorer le dÃ©chiffrement',
 
-    sharesTitle: 'Parts gÃ©nÃ©rÃ©es',
+    sharesTitle: 'Shares gÃ©nÃ©rÃ©es',
     securityTip:
-      `<strong>Conseil de sÃ©curitÃ© :</strong> Stockez ces parts dans des lieux sÃ»rs distincts. Nâ€™importe quelles <span id="thresholdDisplay"></span> parts peuvent reconstituer la phrase complÃ¨te.`,
+      `<strong>Conseil de sÃ©curitÃ© :</strong> Stockez ces shares dans des lieux sÃ»rs distincts. Nâ€™importe quelles <span id="thresholdDisplay"></span> shares peuvent reconstituer la phrase complÃ¨te.`,
 
     securityNotice:
       "<strong>Mode sÃ©curitÃ© :</strong> Utilisation de lâ€™algorithme professionnel de partage de secret de Shamir, fonctionne entiÃ¨rement hors ligne, vos donnÃ©es ne quittent jamais votre appareil. Il est recommandÃ© dâ€™utiliser cet outil sans connexion pour une sÃ©curitÃ© maximale.",
@@ -314,14 +314,14 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
       invalidWordCleared: (index) =>
         `<strong>Phrase invalide :</strong> le mot ${index} nâ€™est pas un mot BIP39 valide et a Ã©tÃ© effacÃ© automatiquement. Veuillez choisir un mot valide dans la liste.`,
       duplicateWords: (words) => `Mots en double : ${words.join(', ')}. Chaque mot doit Ãªtre unique.`,
-      invalidShareFormat: 'Format de part invalide. Veuillez vÃ©rifier votre saisie.',
+      invalidShareFormat: 'Format de share invalide. Veuillez vÃ©rifier votre saisie.',
       insufficientShares: (required, provided) =>
-        `Parts insuffisantes. Au moins ${required} parts sont nÃ©cessaires, ${provided} fournies.`,
-      duplicateShares: 'Parts en double dÃ©tectÃ©es. Chaque part doit Ãªtre unique.',
+        `Shares insuffisantes. Au moins ${required} shares sont nÃ©cessaires, ${provided} fournies.`,
+      duplicateShares: 'Shares en double dÃ©tectÃ©es. Chaque share doit Ãªtre unique.',
       recoveryFailed: 'Ã‰chec de la rÃ©cupÃ©ration : ',
-      noValidShares: 'Aucune donnÃ©e de part valide trouvÃ©e',
+      noValidShares: 'Aucune donnÃ©e de share valide trouvÃ©e',
       checkShareFormat:
-        'VÃ©rifiez le format des parts, chaque ligne doit contenir une part complÃ¨te',
+        'VÃ©rifiez le format des shares, chaque ligne doit contenir une share complÃ¨te',
       copyFailed: 'Ã‰chec de la copie dans le presse-papiers',
       downloadFailed: 'Ã‰chec du tÃ©lÃ©chargement, veuillez rÃ©essayer',
       encryptionFieldsMissing: 'Champs de chiffrement manquants',
@@ -331,11 +331,11 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     },
 
     success: {
-      sharesGenerated: 'Parts gÃ©nÃ©rÃ©es avec succÃ¨s ! Conservez-les en lieu sÃ»r.',
+      sharesGenerated: 'Shares gÃ©nÃ©rÃ©es avec succÃ¨s ! Conservez-les en lieu sÃ»r.',
       mnemonicRecovered: 'Phrase mnÃ©monique rÃ©cupÃ©rÃ©e avec succÃ¨s !',
       copySuccess: 'CopiÃ© dans le presse-papiers !',
-      shareDownloaded: (index) => `Part ${index} tÃ©lÃ©chargÃ©e`,
-      encryptedShareDownloaded: (index) => `Part chiffrÃ©e ${index} tÃ©lÃ©chargÃ©e`,
+      shareDownloaded: (index) => `Share ${index} tÃ©lÃ©chargÃ©e`,
+      encryptedShareDownloaded: (index) => `Share chiffrÃ©e ${index} tÃ©lÃ©chargÃ©e`,
       recoverySuccess: 'RÃ©cupÃ©ration rÃ©ussie !',
     },
 
@@ -349,12 +349,12 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     info: {
       recovering: 'RÃ©cupÃ©ration en cours...',
       validShares: (valid, threshold) =>
-        `${valid} parts valides dÃ©tectÃ©s (besoin de ${threshold}), la rÃ©cupÃ©ration peut commencer`,
+        `${valid} shares valides dÃ©tectÃ©es (besoin de ${threshold}), la rÃ©cupÃ©ration peut commencer`,
     },
 
     fileStatus: {
       processing: 'Traitement...',
-      valid: 'Part valide',
+      valid: 'Share valide',
       invalid: 'Format invalide',
       encrypted: 'ChiffrÃ© - en attente de dÃ©chiffrement',
       unknown: 'Statut inconnu',
@@ -362,35 +362,35 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
 
     copy: 'Copier',
     download: 'TÃ©lÃ©charger',
-    share: (index) => `Part ${index}`,
+    share: (index) => `Share ${index}`,
 
     wordLabel: (index) => `${index}. Mot`,
     wordPlaceholder: (index) => `Mot ${index}`,
     position: 'Position',
 
-    shareFilePrefix: 'Part',
+    shareFilePrefix: 'Share',
 
     mnemonic: 'Phrase mnÃ©monique',
-    shares: 'parts',
-    sharesUsed: 'Parts utilisÃ©es',
+    shares: 'shares',
+    sharesUsed: 'Shares utilisÃ©es',
     need: 'besoin',
     recoveryTime: 'Temps de rÃ©cupÃ©ration',
 
     fileTemplate: {
       appName: 'GLOV Secure â€” Mnemonic Shards',
-      shareContent: 'Contenu de la part',
+      shareContent: 'Contenu de la share',
       generatedTime: 'Date de gÃ©nÃ©ration',
       securityTips: 'Conseils de sÃ©curitÃ©',
       tip1: 'Conservez ce fichier dans un endroit sÃ»r',
-      tip2: 'Ne partagez pas cette part avec des personnes non fiables',
-      tip3: 'Nâ€™importe quel nombre spÃ©cifiÃ© de parts peut reconstituer la phrase originale',
+      tip2: 'Ne partagez pas cette share avec des personnes non fiables',
+      tip3: 'Nâ€™importe quel nombre spÃ©cifiÃ© de shares peut reconstituer la phrase originale',
     },
 
     encryption: {
       title: 'Options de chiffrement',
       enableEncryption: 'Activer le chiffrement',
       encryptionDescription:
-        'Ajoutez une couche de sÃ©curitÃ© en chiffrant chaque part avec un mot de passe',
+        'Ajoutez une couche de sÃ©curitÃ© en chiffrant chaque share avec un mot de passe',
       passwordLabel: 'Mot de passe',
       confirmPasswordLabel: 'Confirmer le mot de passe',
       passwordPlaceholder: 'Saisir le mot de passe de chiffrement',
@@ -400,25 +400,25 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
       weakPassword:
         'Mot de passe trop faible, utilisez au moins 8 caractÃ¨res avec lettres, chiffres et symboles',
       passwordMismatch: 'Les mots de passe ne correspondent pas',
-      encryptingShares: 'Chiffrement des parts...',
-      encryptingShare: (index) => `Chiffrement de la part ${index}...`,
-      encryptedSharesTitle: 'Parts chiffrÃ©es gÃ©nÃ©rÃ©es',
+      encryptingShares: 'Chiffrement des shares...',
+      encryptingShare: (index) => `Chiffrement de la share ${index}...`,
+      encryptedSharesTitle: 'Shares chiffrÃ©es gÃ©nÃ©rÃ©es',
       encryptionSuccess: 'Chiffrement rÃ©ussi !',
       encryptionFailed: 'Ã‰chec du chiffrement : ',
       decryptionFailed: 'Ã‰chec du dÃ©chiffrement : ',
       invalidPassword: 'Mot de passe invalide, veuillez vÃ©rifier et rÃ©essayer',
       encryptionInfo:
-        'Chaque part sera chiffrÃ©e au format OpenPGP, compatible avec les outils GPG. Le mÃªme mot de passe sera requis lors de la rÃ©cupÃ©ration.',
+        'Chaque share sera chiffrÃ©e au format OpenPGP, compatible avec les outils GPG. Le mÃªme mot de passe sera requis lors de la rÃ©cupÃ©ration.',
       securityNotice:
-        'Les parts chiffrÃ©es offrent une sÃ©curitÃ© supplÃ©mentaire si elles sont stockÃ©es dans des lieux potentiellement compromis.',
+        'Les shares chiffrÃ©es offrent une sÃ©curitÃ© supplÃ©mentaire si elles sont stockÃ©es dans des lieux potentiellement compromis.',
       passwordRequired: 'Le mot de passe est requis pour le dÃ©chiffrement',
-      decryptingShares: 'DÃ©chiffrement des parts...',
+      decryptingShares: 'DÃ©chiffrement des shares...',
       encryptedShareNotice:
-        'PART CHIFFRÃ‰E - Cette part est chiffrÃ©e au format OpenPGP et nÃ©cessite un mot de passe pour la rÃ©cupÃ©ration',
+        'SHARE CHIFFRÃ‰E - Cette share est chiffrÃ©e au format OpenPGP et nÃ©cessite un mot de passe pour la rÃ©cupÃ©ration',
       encryptedShareTip:
-        'Cette part est chiffrÃ©e au format OpenPGP (compatible GPG). Vous devrez utiliser le mÃªme mot de passe quâ€™Ã  la gÃ©nÃ©ration pour rÃ©cupÃ©rer la phrase.',
+        'Cette share est chiffrÃ©e au format OpenPGP (compatible GPG). Vous devrez utiliser le mÃªme mot de passe quâ€™Ã  la gÃ©nÃ©ration pour rÃ©cupÃ©rer la phrase.',
       gpgCompatibility:
-        'Cette part chiffrÃ©e peut Ãªtre dÃ©chiffrÃ©e avec la commande GPG : gpg --decrypt shard1.gpg',
+        'Cette share chiffrÃ©e peut Ãªtre dÃ©chiffrÃ©e avec la commande GPG : gpg --decrypt shard1.gpg',
       encryptedFileDetected: 'Fichiers chiffrÃ©s dÃ©tectÃ©s. Mot de passe requis pour le dÃ©chiffrement.',
       noEncryptedFiles: 'Aucun fichier chiffrÃ© Ã  dÃ©chiffrer',
       requiresHttps: 'Les fichiers chiffrÃ©s (.gpg) sont dÃ©sactivÃ©s en HTTP. Utilise HTTPS (contexte sÃ©curisÃ©) pour activer le dÃ©chiffrement.',
@@ -427,7 +427,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     passwordDialog: {
       title: 'Saisir le mot de passe de dÃ©chiffrement',
       retryTitle: 'Mot de passe incorrect',
-      message: 'Veuillez saisir le mot de passe pour dÃ©chiffrer les parts.',
+      message: 'Veuillez saisir le mot de passe pour dÃ©chiffrer les shares.',
       retryMessage: 'Le mot de passe saisi est incorrect. Veuillez rÃ©essayer.',
       confirm: 'Confirmer',
       cancel: 'Annuler',
