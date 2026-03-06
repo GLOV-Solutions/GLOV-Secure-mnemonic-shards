@@ -4,10 +4,11 @@
  */
 
 import { split, combine } from 'shamir-secret-sharing';
-import { getElement, createElement, toggleElement, toggleClass, setHTML, clearElement, addEvent } from '../utils/dom.js';
+import { getElement, createElement, toggleElement, toggleClass, setHTML, setText, clearElement, addEvent } from '../utils/dom.js';
 import { copyToClipboard, downloadFile, formatDateTime, base64Encode } from '../utils/helpers.js';
-import { validateMnemonic, validateShareCollection } from '../utils/validation.js';
+import { validateMnemonic, validateShareCollection, validateAndNormalizeShareObjects, isValidBIP39Word } from '../utils/validation.js';
 import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, INFO_MESSAGES, FILE_TEMPLATES } from '../constants/index.js';
+import { BIP39_WORDLIST } from '../constants/bip39-words.js';
 import { t } from '../utils/i18n.js';
 import { encryptWithPassword, decryptWithPassword, validatePasswordStrength, validatePasswordMatch } from '../utils/encryption.js';
 import { passwordDialog } from './PasswordDialog.js';
@@ -531,26 +532,19 @@ export class ShareManager {
         throw new Error(t('errors.noValidShares'));
       }
 
-      const threshold = validShareData[0].threshold;
-
-      if (validShareData.length < threshold) {
-        throw new Error(t('errors.insufficientShares', threshold, validShareData.length));
+      const strictValidation = validateAndNormalizeShareObjects(validShareData);
+      if (!strictValidation.isValid) {
+        throw new Error(strictValidation.errors[0] || t('errors.invalidShareFormat'));
       }
 
-      // Convert to Uint8Array
-      const shares = validShareData.slice(0, threshold).map((data) => {
-        const binaryString = atob(data.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes;
-      });
+      const threshold = strictValidation.threshold;
+      const shares = strictValidation.shares.slice(0, threshold).map((data) => data.bytes);
 
       const recoveredBytes = await combine(shares);
       const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
+      this.assertRecoveredMnemonicIsValid(recoveredMnemonic);
 
-      this.displayRecoverResult(recoveredMnemonic, validShareData.length, threshold);
+      this.displayRecoverResult(recoveredMnemonic, strictValidation.shares.length, threshold);
       return true;
     } catch (error) {
       this.displayRecoverError(error.message);
@@ -676,24 +670,19 @@ export class ShareManager {
           throw new Error(t('encryption.decryptionFailed') + t('errors.noValidShares'));
         }
 
-        const threshold = finalShares[0].threshold;
-        if (finalShares.length < threshold) {
-          throw new Error(t('errors.insufficientShares', threshold, finalShares.length));
+        const strictValidation = validateAndNormalizeShareObjects(finalShares);
+        if (!strictValidation.isValid) {
+          throw new Error(strictValidation.errors[0] || t('errors.invalidShareFormat'));
         }
 
-        const shareBytes = finalShares.slice(0, threshold).map((data) => {
-          const binaryString = atob(data.data);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          return bytes;
-        });
+        const threshold = strictValidation.threshold;
+        const shareBytes = strictValidation.shares.slice(0, threshold).map((data) => data.bytes);
 
         const recoveredBytes = await combine(shareBytes);
         const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
+        this.assertRecoveredMnemonicIsValid(recoveredMnemonic);
 
-        this.displayRecoverResult(recoveredMnemonic, finalShares.length, threshold);
+        this.displayRecoverResult(recoveredMnemonic, strictValidation.shares.length, threshold);
         return true;
       }
 
@@ -702,25 +691,19 @@ export class ShareManager {
         throw new Error(t('errors.noValidShares'));
       }
 
-      const threshold = validShareData[0].threshold;
-
-      if (validShareData.length < threshold) {
-        throw new Error(t('errors.insufficientShares', threshold, validShareData.length));
+      const strictValidation = validateAndNormalizeShareObjects(validShareData);
+      if (!strictValidation.isValid) {
+        throw new Error(strictValidation.errors[0] || t('errors.invalidShareFormat'));
       }
 
-      const shareBytes = validShareData.slice(0, threshold).map((data) => {
-        const binaryString = atob(data.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes;
-      });
+      const threshold = strictValidation.threshold;
+      const shareBytes = strictValidation.shares.slice(0, threshold).map((data) => data.bytes);
 
       const recoveredBytes = await combine(shareBytes);
       const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
+      this.assertRecoveredMnemonicIsValid(recoveredMnemonic);
 
-      this.displayRecoverResult(recoveredMnemonic, validShareData.length, threshold);
+      this.displayRecoverResult(recoveredMnemonic, strictValidation.shares.length, threshold);
       return true;
     } catch (error) {
       this.displayRecoverError(error.message);
@@ -796,7 +779,7 @@ export class ShareManager {
     if (!resultDiv) return;
 
     // Clear previous content
-    resultDiv.innerHTML = '';
+    clearElement(resultDiv);
 
     // Build a safe DOM structure
     const alertDiv = document.createElement('div');
@@ -835,7 +818,11 @@ export class ShareManager {
     toggleClass(statusDiv, `input-${status}`, true);
 
     // Set message
-    statusDiv.innerHTML = `<span class="status-text">${message}</span>`;
+    statusDiv.textContent = '';
+    const statusText = document.createElement('span');
+    statusText.className = 'status-text';
+    statusText.textContent = message;
+    statusDiv.appendChild(statusText);
   }
 
   /**
@@ -895,7 +882,7 @@ export class ShareManager {
     }
 
     if (alertElement) {
-      setHTML(alertElement, message);
+      setText(alertElement, message);
       toggleElement(alertElement, true);
 
       // Auto-hide after 3s
@@ -930,6 +917,27 @@ export class ShareManager {
    */
   async getPasswordFromDialog(isRetry = false) {
     return await passwordDialog.show(isRetry);
+  }
+
+  /**
+   * Reject recovery output that is not a valid 12/24-word BIP-39 phrase.
+   * @param {string} mnemonic
+   */
+  assertRecoveredMnemonicIsValid(mnemonic) {
+    const words = mnemonic
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (words.length !== 12 && words.length !== 24) {
+      throw new Error(t('errors.invalidShareFormat'));
+    }
+
+    const hasInvalidWord = words.some((word) => !isValidBIP39Word(BIP39_WORDLIST, word));
+    if (hasInvalidWord) {
+      throw new Error(t('errors.invalidShareFormat'));
+    }
   }
 
   /**

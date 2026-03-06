@@ -10,6 +10,13 @@ import {
   LANGUAGE_NAMES
 } from '../constants/i18n.js';
 
+const HTML_TRANSLATION_KEYS = new Set([
+  'recoverInstructions',
+  'uploadInstructions',
+  'securityNotice',
+  'securityTip',
+]);
+
 /**
  * Internationalization Manager class
  */
@@ -142,7 +149,12 @@ export class I18nManager {
    */
   updatePageLanguage() {
     const htmlElement = document.documentElement;
-    htmlElement.setAttribute('lang', this.currentLanguage === LANGUAGES.ZH ? 'zh-CN' : 'en');
+    const langMap = {
+      [LANGUAGES.EN]: 'en',
+      [LANGUAGES.FR]: 'fr',
+      [LANGUAGES.ZH]: 'zh-CN',
+    };
+    htmlElement.setAttribute('lang', langMap[this.currentLanguage] || 'en');
   }
 
   /**
@@ -162,7 +174,11 @@ export class I18nManager {
           element.placeholder = translation;
         }
       } else {
-        element.innerHTML = translation;
+        if (HTML_TRANSLATION_KEYS.has(key) && typeof translation === 'string') {
+          element.innerHTML = translation;
+        } else {
+          element.textContent = String(translation ?? '');
+        }
       }
     });
 
@@ -187,7 +203,7 @@ export class I18nManager {
    * Toggle between available languages
    */
   toggleLanguage() {
-    const newLanguage = this.currentLanguage === LANGUAGES.EN ? LANGUAGES.ZH : LANGUAGES.EN;
+    const newLanguage = this.currentLanguage === LANGUAGES.EN ? LANGUAGES.FR : LANGUAGES.EN;
     this.switchTo(newLanguage);
   }
 

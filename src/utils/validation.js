@@ -79,14 +79,16 @@ export function validateMnemonic(words) {
     }
   });
 
+  const warnings = [];
   if (duplicates.size > 0) {
     const duplicateWords = Array.from(duplicates).join(', ');
-    errors.push(`Duplicate words detected: ${duplicateWords}`);
+    warnings.push(`Duplicate words detected: ${duplicateWords}`);
   }
 
   return {
     isValid: errors.length === 0,
     errors,
+    warnings,
     duplicates: Array.from(duplicates),
   };
 }
@@ -167,5 +169,131 @@ export function validateShareCollection(shareStrings) {
     threshold,
     errors,
     shareIndices: Array.from(shareIndices),
+  };
+}
+
+function isPositiveInteger(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function decodeShareDataToBytes(base64Data) {
+  if (typeof base64Data !== 'string' || base64Data.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    const binary = atob(base64Data);
+    if (!binary || binary.length === 0) {
+      return null;
+    }
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Strictly validate and normalize share objects for recovery.
+ * @param {Array<string|Object>} shares
+ * @returns {{isValid:boolean, errors:string[], threshold:number, total:number|null, shares:Array<Object>}}
+ */
+export function validateAndNormalizeShareObjects(shares) {
+  const errors = [];
+  const normalized = [];
+  const seenIndices = new Set();
+  const thresholds = new Set();
+  const totals = new Set();
+
+  shares.forEach((share, idx) => {
+    let raw = null;
+
+    if (typeof share === 'string') {
+      raw = parseShareData(share);
+    } else if (share && typeof share === 'object') {
+      raw = share;
+    }
+
+    if (!raw) {
+      errors.push(`Line ${idx + 1}: Invalid share payload.`);
+      return;
+    }
+
+    const index = Number(raw.index);
+    const threshold = Number(raw.threshold);
+    const total = raw.total === undefined || raw.total === null ? null : Number(raw.total);
+
+    if (!isPositiveInteger(index)) {
+      errors.push(`Line ${idx + 1}: Invalid share index.`);
+      return;
+    }
+    if (!isPositiveInteger(threshold) || threshold < 2) {
+      errors.push(`Line ${idx + 1}: Invalid threshold.`);
+      return;
+    }
+    if (total !== null && (!isPositiveInteger(total) || total < threshold)) {
+      errors.push(`Line ${idx + 1}: Invalid total shares value.`);
+      return;
+    }
+    if (seenIndices.has(index)) {
+      errors.push(`Line ${idx + 1}: Duplicate share index ${index}.`);
+      return;
+    }
+
+    const bytes = decodeShareDataToBytes(raw.data);
+    if (!bytes) {
+      errors.push(`Line ${idx + 1}: Invalid share data encoding.`);
+      return;
+    }
+
+    seenIndices.add(index);
+    thresholds.add(threshold);
+    if (total !== null) totals.add(total);
+
+    normalized.push({
+      index,
+      threshold,
+      total,
+      data: raw.data,
+      bytes,
+    });
+  });
+
+  if (normalized.length === 0) {
+    errors.push('No valid shares detected.');
+    return {
+      isValid: false,
+      errors,
+      threshold: 0,
+      total: null,
+      shares: [],
+    };
+  }
+
+  if (thresholds.size !== 1) {
+    errors.push('Shares have inconsistent thresholds.');
+  }
+  if (totals.size > 1) {
+    errors.push('Shares have inconsistent total values.');
+  }
+
+  const threshold = normalized[0].threshold;
+  const total = normalized[0].total;
+
+  if (normalized.length < threshold) {
+    errors.push(`At least ${threshold} shares are required â€” only ${normalized.length} provided.`);
+  }
+
+  normalized.sort((a, b) => a.index - b.index);
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    threshold,
+    total,
+    shares: normalized,
   };
 }
