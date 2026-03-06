@@ -369,7 +369,7 @@ class MnemonicSplitApp {
       const applied = this.mnemonicInput.setWords(words);
 
       if (!applied) {
-        this.shareManager.showError(`${messages.failed} (inputs not ready)`);
+        this.shareManager.showError(messages.failed);
         return;
       }
 
@@ -379,11 +379,8 @@ class MnemonicSplitApp {
       if (autoShard && autoShard.checked) {
         await this.handleGenerateShares();
       }
-    } catch (error) {
-      const details = error && error.message ? ` ${error.message}` : '';
-      this.shareManager.showError(`${messages.failed}${details}`);
-      // Keep visible diagnostics for environments where the app wraps/locks intrinsics.
-      console.error('Seed generation error:', error);
+    } catch (_) {
+      this.shareManager.showError(messages.failed);
     }
   }
 
