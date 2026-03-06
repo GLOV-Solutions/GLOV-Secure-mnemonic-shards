@@ -68,7 +68,7 @@ export class PasswordDialog {
     // Visibility toggle button
     const toggleBtn = createElement('button', ['password-toggle-btn']);
     toggleBtn.type = 'button';
-    toggleBtn.innerHTML = 'ðŸ‘ï¸';
+    toggleBtn.innerHTML = '👁️';
     toggleBtn.setAttribute('aria-label', 'Toggle password visibility');
 
     passwordWrapper.appendChild(input);
@@ -124,7 +124,7 @@ export class PasswordDialog {
     addEvent(toggleBtn, 'click', () => {
       const type = input.type === 'password' ? 'text' : 'password';
       input.type = type;
-      toggleBtn.innerHTML = type === 'password' ? 'ðŸ‘ï¸' : 'ðŸ‘ï¸â€ðŸ—¨ï¸';
+      toggleBtn.innerHTML = type === 'password' ? '👁️' : '👁️‍🗨️';
     });
 
     // Confirm on Enter key

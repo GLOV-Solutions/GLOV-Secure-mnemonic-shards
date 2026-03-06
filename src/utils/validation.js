@@ -284,7 +284,7 @@ export function validateAndNormalizeShareObjects(shares) {
   const total = normalized[0].total;
 
   if (normalized.length < threshold) {
-    errors.push(`At least ${threshold} shares are required â€” only ${normalized.length} provided.`);
+    errors.push(`At least ${threshold} shares are required — only ${normalized.length} provided.`);
   }
 
   normalized.sort((a, b) => a.index - b.index);
