@@ -10,6 +10,7 @@ import { getElement, addEvent, toggleElement, toggleClass } from './utils/dom.js
 import { APP_CONFIG, MNEMONIC_CONFIG, SELECTORS, CSS_CLASSES } from './constants/index.js';
 import { i18n } from './utils/i18n.js';
 import { LANGUAGES } from './constants/i18n.js';
+import { generateMnemonicWords } from './utils/mnemonic.js';
 
 /**
  * Returns true if WebCrypto (crypto.subtle) is available in a secure context.
@@ -84,6 +85,7 @@ class MnemonicSplitApp {
 
     // Encryption listeners inside ShareManager (kept)
     this.shareManager.initEncryptionListeners();
+    this.updateSeedGenerationUI();
 
     // Hard-disable encryption UI when WebCrypto isn't available (HTTP on ESP32)
     this.disableEncryptionUIIfNeeded();
@@ -137,6 +139,12 @@ class MnemonicSplitApp {
     const generateBtn = getElement(SELECTORS.GENERATE_BTN);
     if (generateBtn) {
       addEvent(generateBtn, 'click', () => this.handleGenerateShares());
+    }
+
+    // Generate mnemonic seed
+    const generateSeedBtn = getElement(SELECTORS.GENERATE_SEED_BTN);
+    if (generateSeedBtn) {
+      addEvent(generateSeedBtn, 'click', () => this.handleGenerateSeed());
     }
 
     // Recover mnemonic
@@ -198,6 +206,7 @@ class MnemonicSplitApp {
     i18n.addListener((lang) => {
       this.updateLanguageUI(lang);
       this.updateDynamicContent();
+      this.updateSeedGenerationUI();
       // Re-apply encryption UI rules after language changes (for translated message)
       this.disableEncryptionUIIfNeeded();
     });
@@ -223,6 +232,42 @@ class MnemonicSplitApp {
     this.updateTotalSharesOptions();
     this.updatePlaceholders();
     this.updateWordInputPlaceholders();
+  }
+
+  getSeedGenerationMessages() {
+    const isFrench = i18n.getCurrentLanguage && i18n.getCurrentLanguage() === LANGUAGES.FR;
+    if (isFrench) {
+      return {
+        label: 'Generation de seed',
+        button: 'Generer une seed',
+        hint: 'Genere une seed BIP-39 valide, ou saisis la tienne ci-dessous.',
+        autoShard: 'Generer automatiquement les shards apres la generation de la seed',
+        generated: 'Seed generee avec succes. Tu peux maintenant la modifier ou generer les shards.',
+        failed: 'Echec de la generation de seed. Veuillez reessayer.',
+      };
+    }
+
+    return {
+      label: 'Seed generation',
+      button: 'Generate Seed',
+      hint: 'Generate a valid BIP-39 seed phrase, or enter your own below.',
+      autoShard: 'Automatically generate shards right after seed generation',
+      generated: 'Seed generated successfully. You can now edit it or generate shards.',
+      failed: 'Seed generation failed. Please retry.',
+    };
+  }
+
+  updateSeedGenerationUI() {
+    const messages = this.getSeedGenerationMessages();
+    const label = getElement('#seedGenerationLabel');
+    const button = getElement(SELECTORS.GENERATE_SEED_BTN);
+    const hint = getElement('#seedGenerationHint');
+    const autoShardLabel = getElement('#autoShardAfterSeedLabel');
+
+    if (label) label.textContent = messages.label;
+    if (button) button.textContent = messages.button;
+    if (hint) hint.textContent = messages.hint;
+    if (autoShardLabel) autoShardLabel.textContent = messages.autoShard;
   }
 
   updateTotalSharesOptions() {
@@ -314,6 +359,29 @@ class MnemonicSplitApp {
 
     const success = await this.shareManager.generateShares(validation.words, totalShares, threshold);
     if (success) this.scrollToResult();
+  }
+
+  async handleGenerateSeed() {
+    const messages = this.getSeedGenerationMessages();
+
+    try {
+      const words = generateMnemonicWords(this.currentWordCount);
+      const applied = this.mnemonicInput.setWords(words);
+
+      if (!applied) {
+        this.shareManager.showError(messages.failed);
+        return;
+      }
+
+      this.shareManager.showSuccess(messages.generated);
+
+      const autoShard = getElement(SELECTORS.AUTO_SHARD_AFTER_SEED);
+      if (autoShard && autoShard.checked) {
+        await this.handleGenerateShares();
+      }
+    } catch (_) {
+      this.shareManager.showError(messages.failed);
+    }
   }
 
   async handleRecoverMnemonic() {

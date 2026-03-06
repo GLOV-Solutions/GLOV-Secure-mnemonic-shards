@@ -67,9 +67,11 @@ export const SELECTORS = {
 
   // Buttons
   GENERATE_BTN: '#generateBtn',
+  GENERATE_SEED_BTN: '#generateSeedBtn',
   RECOVER_BTN: '#recoverBtn',
 
   // Inputs
+  AUTO_SHARD_AFTER_SEED: '#autoShardAfterSeed',
   RECOVER_INPUT: '#recoverInput',
 
   // Result areas

@@ -107,6 +107,25 @@
               </select>
             </div>
           </div>
+
+          <div class="seed-generation-panel">
+            <div class="control-group">
+              <label id="seedGenerationLabel">Seed generation</label>
+              <div class="seed-generation-actions">
+                <button type="button" class="seed-generate-btn" id="generateSeedBtn">
+                  Generate Seed
+                </button>
+              </div>
+              <small class="seed-generation-hint" id="seedGenerationHint">
+                Generate a valid BIP-39 seed phrase, or fill the words manually below.
+              </small>
+              <label class="checkbox-container">
+                <input type="checkbox" id="autoShardAfterSeed" />
+                <span class="checkmark"></span>
+                <span id="autoShardAfterSeedLabel">Automatically generate shards right after seed generation</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Mnemonic input section -->
