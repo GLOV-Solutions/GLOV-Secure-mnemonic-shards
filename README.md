@@ -65,11 +65,12 @@ bun run build:single
 Produces:
 - `dist/index.single.html` (CSS/JS inlined for fully offline/embedded use)
 - `dist/VERSION.txt` (SHA‑256 of the bundle)
+- `dist/manifest.json` (build metadata + deterministic SHA‑256 inventory of `dist/` files)
 
 Alternative via npm:
 ```bash
 npm run build
-node tools/inline-build.mjs && node tools/hash.mjs
+node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs
 ```
 
 ### Verify the hash
@@ -80,6 +81,15 @@ shasum -a 256 dist/index.single.html
 - Windows PowerShell:
 ```powershell
 Get-FileHash dist/index.single.html -Algorithm SHA256
+```
+
+### Verify against manifest
+- Compare `dist/index.single.html` SHA‑256 with:
+  - `dist/VERSION.txt`, and
+  - `dist/manifest.json` entry where `path` is `index.single.html`
+- Optional (macOS/Linux with `jq`):
+```bash
+jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manifest.json
 ```
 
 ## Usage
@@ -127,6 +137,7 @@ Get-FileHash dist/index.single.html -Algorithm SHA256
 - `public/` — Service worker, favicon, assets
 - `tools/inline-build.mjs` — Inlines CSS/JS for single‑file bundle
 - `tools/hash.mjs` — SHA‑256 → `VERSION.txt`
+- `tools/manifest.mjs` — Build manifest + SHA‑256 inventory → `manifest.json`
 - `Dockerfile`, `docker-compose.yml` — Static deployment (port 8848), non‑root, read‑only FS
 
 ## Deployment
@@ -134,6 +145,21 @@ Get-FileHash dist/index.single.html -Algorithm SHA256
 - Docker: non‑root image, healthcheck, read‑only filesystem
 - Static hosting: serve `dist/` with any HTTP server
 - Single‑file: `dist/index.single.html` for embedded or fully offline environments
+
+## GitHub Release Assets
+
+Workflow: `.github/workflows/release.yml`
+
+Triggers:
+- Push a tag matching `v*` (example: `v1.0.1`)
+- Manual run via `workflow_dispatch` with `tag_name`
+
+Published release assets:
+- `webui-dist.zip` (full `dist/` package)
+- `webui-dist.zip.sha256` (SHA‑256 of the zip)
+- `dist/index.single.html`
+- `dist/VERSION.txt`
+- `dist/manifest.json`
 
 ## Internationalization
 

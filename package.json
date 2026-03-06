@@ -9,7 +9,7 @@
     "dev": "bun run vite",
     "serve": "bun --bun run vite preview --port 8080 --host",
     "build": "bun run vite build",
-    "build:single": "bun run vite build && node tools/inline-build.mjs && node tools/hash.mjs",
+    "build:single": "bun run vite build && node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs",
     "preview": "bun run vite preview",
     "start:npm": "npx http-server -p 8080 -o",
     "dev:npm": "npm run dev",
