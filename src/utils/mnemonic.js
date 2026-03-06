@@ -1,4 +1,5 @@
-import { entropyToMnemonic } from 'bip39';
+import { entropyToMnemonic } from '@scure/bip39';
+import { wordlist as englishWordlist } from '@scure/bip39/wordlists/english';
 
 function bytesToHex(bytes) {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -26,7 +27,7 @@ export function generateMnemonicWords(wordCount) {
   globalThis.crypto.getRandomValues(random);
 
   const entropyHex = bytesToHex(random);
-  const mnemonic = entropyToMnemonic(entropyHex).trim().toLowerCase();
+  const mnemonic = entropyToMnemonic(entropyHex, englishWordlist).trim().toLowerCase();
   const words = mnemonic.split(/\s+/).filter(Boolean);
 
   if (words.length !== wordCount) {
