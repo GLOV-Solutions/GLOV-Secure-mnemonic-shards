@@ -511,6 +511,28 @@ export class MnemonicInput {
   }
 
   /**
+   * Programmatically set all mnemonic inputs from a word array.
+   * @param {string[]} words
+   * @returns {boolean}
+   */
+  setWords(words) {
+    if (!Array.isArray(words) || words.length !== this.wordCount) {
+      return false;
+    }
+
+    for (let i = 1; i <= this.wordCount; i++) {
+      const input = getElement(SELECTORS.WORD_INPUT(i));
+      if (!input) return false;
+
+      input.value = String(words[i - 1] || '').trim().toLowerCase();
+      this.validateAndStyleInput(input, i);
+    }
+
+    this.checkForDuplicateWords();
+    return true;
+  }
+
+  /**
    * Validate that all inputs are non-empty and valid BIP39 words.
    * @returns {{isValid: boolean, words: string[], hasEmpty: boolean, hasInvalidWord: boolean, invalidWordIndex: number}}
    */

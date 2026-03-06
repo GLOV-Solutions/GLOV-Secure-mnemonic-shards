@@ -756,12 +756,17 @@ export class RecoveryTabManager {
   }
 
   setupEncryptionPassword() {
+    const uploadDecryptionForm = getElement('#uploadDecryptionForm');
     const passwordInput = getElement('#uploadEncryptionPassword');
     const passwordToggle = getElement('#uploadPasswordToggleBtn');
     const applyBtn = getElement('#applyDecryptionBtn');
     const skipBtn = getElement('#skipDecryptionBtn');
 
     if (!passwordInput || !passwordToggle || !applyBtn || !skipBtn) return;
+
+    if (uploadDecryptionForm) {
+      addEvent(uploadDecryptionForm, 'submit', (e) => e.preventDefault());
+    }
 
     // NEW: if WebCrypto not available, disable the whole section
     if (!this.webCryptoAvailable) {
