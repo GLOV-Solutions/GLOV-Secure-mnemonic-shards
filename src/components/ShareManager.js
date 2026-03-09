@@ -6,12 +6,25 @@
 import { split, combine } from 'shamir-secret-sharing';
 import { getElement, createElement, toggleElement, toggleClass, setHTML, setText, clearElement, addEvent } from '../utils/dom.js';
 import { copyToClipboard, downloadFile, formatDateTime, base64Encode } from '../utils/helpers.js';
-import { validateMnemonic, validateShareCollection, validateAndNormalizeShareObjects, isValidBIP39Word } from '../utils/validation.js';
+import { analyzePastedShareFormats, validateMnemonic, validateShareCollection, validateAndNormalizeShareObjects } from '../utils/validation.js';
 import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, INFO_MESSAGES, FILE_TEMPLATES } from '../constants/index.js';
-import { BIP39_WORDLIST } from '../constants/bip39-words.js';
 import { t } from '../utils/i18n.js';
 import { encryptWithPassword, decryptWithPassword, validatePasswordStrength, validatePasswordMatch } from '../utils/encryption.js';
 import { passwordDialog } from './PasswordDialog.js';
+
+function generateShareSetId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  throw new Error('Secure random source is not available for share set generation.');
+}
 
 export class ShareManager {
   constructor() {
@@ -176,10 +189,12 @@ export class ShareManager {
       const mnemonic = words.join(' ');
       const secretBytes = new TextEncoder().encode(mnemonic);
       const rawShares = await split(secretBytes, totalShares, threshold);
+      const setId = generateShareSetId();
 
       // Base64-encode shares
       this.currentShares = rawShares.map((share, index) => {
         const shareData = {
+          setId,
           index: index + 1,
           threshold: threshold,
           total: totalShares,
@@ -417,17 +432,36 @@ export class ShareManager {
       return;
     }
 
+    const formatAnalysis = analyzePastedShareFormats(shareStrings);
+    if (formatAnalysis.isMixedPlainAndGpg) {
+      this.updateStatus('invalid', t('errors.mixedPastedShareFormats'));
+      recoverBtn.disabled = true;
+      return;
+    }
+    if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount > 0) {
+      this.updateStatus('waiting', t('encryption.passwordRequired'));
+      recoverBtn.disabled = false;
+      return;
+    }
+    if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount === 0 && formatAnalysis.unknownCount > 0) {
+      this.updateStatus('invalid', t('errors.invalidShareFormat'));
+      recoverBtn.disabled = true;
+      return;
+    }
+
     const validation = validateShareCollection(shareStrings);
 
-    if (!validation.isValid) {
-      if (validation.validCount === 0) {
-        this.updateStatus('invalid', t('errors.invalidShareFormat'));
-      } else if (validation.errors && validation.errors.some((error) => /duplicate/i.test(error))) {
-        // Language-neutral duplicate detection
-        this.updateStatus('invalid', t('errors.duplicateShares'));
-      } else {
-        this.updateStatus('insufficient', t('errors.insufficientShares', validation.threshold, validation.validCount));
-      }
+      if (!validation.isValid) {
+        if (validation.validCount === 0) {
+          this.updateStatus('invalid', t('errors.invalidShareFormat'));
+        } else if (validation.errors && validation.errors.some((error) => /duplicate/i.test(error))) {
+          // Language-neutral duplicate detection
+          this.updateStatus('invalid', t('errors.duplicateShares'));
+        } else if (validation.errors && validation.errors.some((error) => /set identifier|same set/i.test(error))) {
+          this.updateStatus('invalid', t('errors.inconsistentShareSet'));
+        } else {
+          this.updateStatus('insufficient', t('errors.insufficientShares', validation.threshold, validation.validCount));
+        }
       recoverBtn.disabled = true;
     } else {
       this.updateStatus('valid', t('info.validShares', validation.validCount, validation.threshold));
@@ -465,8 +499,16 @@ export class ShareManager {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
 
-      // Detect whether this might be encrypted (not standard JSON/base64 format)
-      let isEncrypted = false;
+      const formatAnalysis = analyzePastedShareFormats(shareStrings);
+      if (formatAnalysis.isMixedPlainAndGpg) {
+        throw new Error(t('errors.mixedPastedShareFormats'));
+      }
+      if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount === 0 && formatAnalysis.unknownCount > 0) {
+        throw new Error(t('errors.invalidShareFormat'));
+      }
+
+      // Detect whether this is pasted OpenPGP armored content.
+      const isEncrypted = formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount > 0;
       const validShareData = [];
 
       for (const shareStr of shareStrings) {
@@ -475,10 +517,7 @@ export class ShareManager {
           if (shareData.threshold && shareData.index && shareData.data) {
             validShareData.push(shareData);
           }
-        } catch (e) {
-          // Not a standard share, likely encrypted
-          isEncrypted = true;
-        }
+        } catch (_e) {}
       }
 
       // If no valid standard shares found, try decryption path
@@ -587,6 +626,15 @@ export class ShareManager {
     recoverBtn.textContent = t('info.recovering');
 
     try {
+      const pastedStringShares = shares.filter((share) => typeof share === 'string');
+      const formatAnalysis = analyzePastedShareFormats(pastedStringShares);
+      if (formatAnalysis.isMixedPlainAndGpg) {
+        throw new Error(t('errors.mixedPastedShareFormats'));
+      }
+      if (pastedStringShares.length > 0 && formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount === 0 && formatAnalysis.unknownCount > 0) {
+        throw new Error(t('errors.invalidShareFormat'));
+      }
+
       // Classify shares (encrypted vs plain)
       let isEncrypted = false;
       const validShareData = [];
@@ -801,10 +849,32 @@ export class ShareManager {
     alertDiv.appendChild(document.createElement('br'));
 
     const smallElement = document.createElement('small');
-    smallElement.textContent = t('errors.checkShareFormat');
+    smallElement.textContent = this.getRecoveryErrorHint(errorMessage);
     alertDiv.appendChild(smallElement);
 
     resultDiv.appendChild(alertDiv);
+  }
+
+  getRecoveryErrorHint(errorMessage) {
+    if (/set identifier|same set/i.test(errorMessage)) {
+      return t('errors.inconsistentShareSet');
+    }
+    if (/plain shares and GPG|plain share files and GPG/i.test(errorMessage)) {
+      return errorMessage;
+    }
+    if (/invalid password|wrong password/i.test(errorMessage)) {
+      return t('encryption.invalidPassword');
+    }
+    if (/password is required|required for decryption|mot de passe/i.test(errorMessage)) {
+      return t('encryption.passwordRequired');
+    }
+    if (/no valid shard data found|no valid shares detected/i.test(errorMessage)) {
+      return t('errors.noValidShares');
+    }
+    if (/invalid share format|invalid shard format|invalid share payload|invalid share data encoding/i.test(errorMessage)) {
+      return t('errors.invalidShareFormat');
+    }
+    return t('errors.checkShareFormat');
   }
 
   /**
@@ -935,12 +1005,11 @@ export class ShareManager {
       .split(/\s+/)
       .filter(Boolean);
 
-    if (words.length !== 12 && words.length !== 24) {
-      throw new Error(t('errors.invalidShareFormat'));
-    }
-
-    const hasInvalidWord = words.some((word) => !isValidBIP39Word(BIP39_WORDLIST, word));
-    if (hasInvalidWord) {
+    const validation = validateMnemonic(words);
+    if (!validation.isValid) {
+      if (validation.hasChecksumError) {
+        throw new Error(t('errors.invalidMnemonicChecksum'));
+      }
       throw new Error(t('errors.invalidShareFormat'));
     }
   }

@@ -1,6 +1,6 @@
 {
   "name": "glov-secure-mnemonic-shards",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Professional mnemonic seed phrase splitting tool using Shamir Secret Sharing with file upload recovery, tab-based interface, and OpenPGP encryption support",
   "main": "index.js",
   "type": "module",
@@ -9,6 +9,8 @@
     "dev": "bun run vite",
     "serve": "bun --bun run vite preview --port 8080 --host",
     "build": "bun run vite build",
+    "test": "node tests/offline-regression.mjs",
+    "test:offline": "node tests/offline-regression.mjs",
     "build:single": "bun run vite build && node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs",
     "preview": "bun run vite preview",
     "start:npm": "npx http-server -p 8080 -o",

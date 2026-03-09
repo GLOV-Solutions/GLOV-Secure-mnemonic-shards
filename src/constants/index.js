@@ -7,7 +7,7 @@ export const APP_CONFIG = {
   NAME: 'GLOV Secure — Mnemonic Shards',
   DESCRIPTION:
     'Securely split a BIP-39 mnemonic into multiple shards; any chosen threshold of shards can recover the original mnemonic.',
-  VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0',
+  VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.1',
 };
 
 // Mnemonic configuration
@@ -67,11 +67,11 @@ export const SELECTORS = {
 
   // Buttons
   GENERATE_BTN: '#generateBtn',
-  GENERATE_SEED_BTN: '#generateSeedBtn',
+  GENERATE_MNEMONIC_BTN: '#generateMnemonicBtn',
   RECOVER_BTN: '#recoverBtn',
 
   // Inputs
-  AUTO_SHARD_AFTER_SEED: '#autoShardAfterSeed',
+  AUTO_SHARD_AFTER_MNEMONIC: '#autoShardAfterMnemonic',
   RECOVER_INPUT: '#recoverInput',
 
   // Result areas
@@ -142,7 +142,9 @@ export const ERROR_MESSAGES = {
   INVALID_WORD: (index) =>
     `Word #${index} is not a valid BIP-39 word. Please choose a valid word from the suggestions.`,
   DUPLICATE_WORDS: (words) =>
-    `Duplicate words detected: ${words}. Mnemonic words should be unique — please adjust the duplicates.`,
+    `Repeated words detected: ${words}. This can be valid in BIP-39, but double-check the positions.`,
+  INVALID_MNEMONIC_CHECKSUM:
+    'Invalid BIP-39 mnemonic checksum. Please verify the word order and word count.',
   INVALID_SHARE_FORMAT: 'No valid shard detected. Please check the input format.',
   INSUFFICIENT_SHARES: (valid, threshold) =>
     `At least ${threshold} shards are required. Currently only ${valid} valid shard(s) detected.`,

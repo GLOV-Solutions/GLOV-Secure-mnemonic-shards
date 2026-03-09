@@ -266,7 +266,7 @@ export function validatePasswordMatch(password, confirmPassword) {
  */
 export function generateRandomPassword(length = 16, options = {}) {
   // If WebCrypto isn't available, either throw or fallback to a weaker generator.
-  // For a seed tool, better to throw and explain than silently weaken security.
+  // For a mnemonic backup tool, better to throw and explain than silently weaken security.
   if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
     throw new Error('Secure random is not available. Use HTTPS / secure context.');
   }

@@ -3,7 +3,7 @@
 Privacy‑first, offline tool to split a BIP‑39 mnemonic into multiple shards using Shamir’s Secret Sharing (SSS), with recovery from a configurable threshold of shards. Optional shard encryption using OpenPGP (GPG‑compatible). Everything runs client‑side in your browser and works offline via a service worker.
 
 - 12 or 24 words, 3–7 total shards, 2–5 recovery threshold
-- BIP‑39 validation, auto‑complete suggestions, duplicate detection
+- Full BIP‑39 mnemonic validation (wordlist + checksum), auto‑complete suggestions, duplicate detection
 - Optional AES‑256 encryption via OpenPGP
 - No network calls; ideal for air‑gapped usage
 
@@ -96,7 +96,7 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 
 ### Generate
 - Choose 12 or 24 words.
-- Enter the mnemonic (auto‑complete + BIP‑39 validation).
+- Generate or enter the mnemonic phrase (auto‑complete + full BIP‑39 checksum validation).
 - Select total shards (3–7) and threshold (2–5).
 - Optional: enable encryption and set a strong password (AES‑256 via OpenPGP).
 - Click “Generate Shares”, then copy/download each shard.
@@ -110,11 +110,13 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 ### Best practices
 - Store shards separately; never keep all shards together.
 - If you encrypt, store the password safely — it is required for recovery.
+- This tool shards the BIP‑39 mnemonic phrase itself, not the derived BIP‑39 binary seed.
 
 ## Share Formats
 
 - Standard (copy/paste or `.txt`):
-  - Base64 of a JSON object: `{ index, threshold, total, data }`
+  - Base64 of a JSON object: `{ setId?, index, threshold, total, data }`
+  - New shares include `setId` to ensure all shares in recovery come from the same generated set.
   - `data` contains Base64 of the raw SSS bytes.
 - Encrypted (`.gpg`):
   - OpenPGP ASCII armor (works with `gpg --decrypt shard.gpg`).

@@ -103,9 +103,17 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
         `Word ${index} is not a valid BIP39 word, please select a valid word from the suggestions.`,
       invalidWordCleared: (index) =>
         `<strong>Invalid mnemonic:</strong> Word ${index} is not a valid BIP39 word and has been automatically cleared. Please select a valid word from the suggestions.`,
+      invalidMnemonicChecksum:
+        'Invalid BIP-39 mnemonic checksum. Please verify the word order and word count.',
       duplicateWords: (words) =>
-        `Duplicate words found: ${words.join(', ')}. Each word should be unique.`,
+        `Repeated words found: ${words.join(', ')}. This can be valid in BIP-39, but please double-check the positions.`,
       invalidShareFormat: 'Invalid share format. Please check your input.',
+      mixedPastedShareFormats:
+        'Do not mix plain shares and GPG shares in pasted input. Paste one format only.',
+      mixedUploadedShareFormats:
+        'Do not mix plain share files and GPG share files in the same upload set.',
+      inconsistentShareSet:
+        'These shares do not belong to the same generated set, or some are missing the set identifier.',
       insufficientShares: (required, provided) =>
         `Insufficient shares. Need at least ${required} shares, but got ${provided}.`,
       duplicateShares: 'Duplicate shares detected. Each share should be unique.',
@@ -133,7 +141,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     warnings: {
       duplicateWordsDetected: 'Duplicate words detected:',
       uniqueWordsNote:
-        'Words in the mnemonic should be unique, please check and modify duplicate words.',
+        'Repeated words can be valid in BIP-39, but double-check that each repeated word is intentional.',
       duplicateWords: (words) => `Duplicate words detected: ${words.join(', ')}`,
     },
 
@@ -313,8 +321,17 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
         `Le mot ${index} n’est pas un mot BIP39 valide, veuillez en choisir un dans la liste.`,
       invalidWordCleared: (index) =>
         `<strong>Phrase invalide :</strong> le mot ${index} n’est pas un mot BIP39 valide et a été effacé automatiquement. Veuillez choisir un mot valide dans la liste.`,
-      duplicateWords: (words) => `Mots en double : ${words.join(', ')}. Chaque mot doit être unique.`,
+      invalidMnemonicChecksum:
+        'Checksum BIP-39 invalide. Verifiez l’ordre des mots et le nombre total de mots.',
+      duplicateWords: (words) =>
+        `Mots repetes : ${words.join(', ')}. Cela peut etre valide en BIP-39, mais verifiez bien les positions.`,
       invalidShareFormat: 'Format de share invalide. Veuillez vérifier votre saisie.',
+      mixedPastedShareFormats:
+        'Ne melange pas des shares en clair et des shares GPG dans la zone de collage. Colle un seul format a la fois.',
+      mixedUploadedShareFormats:
+        'Ne melange pas des fichiers de shares en clair et des fichiers de shares GPG dans le meme lot.',
+      inconsistentShareSet:
+        'Ces shares ne proviennent pas du meme lot genere, ou certaines n’ont pas d’identifiant de lot.',
       insufficientShares: (required, provided) =>
         `Shares insuffisantes. Au moins ${required} shares sont nécessaires, ${provided} fournies.`,
       duplicateShares: 'Shares en double détectées. Chaque share doit être unique.',
@@ -342,7 +359,7 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     warnings: {
       duplicateWordsDetected: 'Mots en double détectés :',
       uniqueWordsNote:
-        'Les mots de la phrase doivent être uniques, veuillez corriger les doublons.',
+        'Des mots repetes peuvent etre valides en BIP-39, mais verifiez qu’ils sont intentionnels.',
       duplicateWords: (words) => `Mots en double détectés : ${words.join(', ')}`,
     },
 

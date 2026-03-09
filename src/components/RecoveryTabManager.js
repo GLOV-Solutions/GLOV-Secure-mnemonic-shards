@@ -4,7 +4,7 @@
  */
 
 import { getElement, createElement, toggleElement, toggleClass, setHTML, clearElement, addEvent } from '../utils/dom.js';
-import { validateShareCollection } from '../utils/validation.js';
+import { validateShareCollection, analyzePastedShareFormats } from '../utils/validation.js';
 import { decryptWithPassword, detectGpgFormat } from '../utils/encryption.js';
 import { t } from '../utils/i18n.js';
 import { passwordDialog } from './PasswordDialog.js';
@@ -162,6 +162,21 @@ export class RecoveryTabManager {
     // Validate file types and sizes
     const validFiles = this.validateFiles(files);
     if (validFiles.length === 0) return;
+
+    const incomingEncrypted = validFiles.some((file) => file.name.endsWith('.gpg'));
+    const incomingPlain = validFiles.some((file) => !file.name.endsWith('.gpg'));
+    const existingEncrypted = this.uploadedFiles.some((file) => file.isEncrypted === true);
+    const existingPlain = this.uploadedFiles.some((file) => file.isEncrypted === false);
+
+    if (
+      (incomingEncrypted && incomingPlain) ||
+      (incomingEncrypted && existingPlain) ||
+      (incomingPlain && existingEncrypted)
+    ) {
+      this.showError(t('errors.mixedUploadedShareFormats'));
+      this.validateCurrentShares();
+      return;
+    }
 
     // Check if any are encrypted
     this.hasEncryptedFiles = validFiles.some((file) => file.name.endsWith('.gpg'));
@@ -381,6 +396,15 @@ export class RecoveryTabManager {
       .map((file) => file.shareData);
 
     const encryptedFiles = this.uploadedFiles.filter((file) => file.status === 'encrypted');
+    const hasEncryptedUploads = this.uploadedFiles.some((file) => file.isEncrypted === true);
+    const hasPlainUploads = this.uploadedFiles.some((file) => file.isEncrypted === false);
+
+    if (hasEncryptedUploads && hasPlainUploads) {
+      this.updateStatus('invalid', t('errors.mixedUploadedShareFormats'), statusDiv);
+      recoverBtn.disabled = true;
+      this.togglePasswordSection(false);
+      return;
+    }
 
     // NEW: if encrypted files exist but no WebCrypto, mark them invalid (defensive)
     if (encryptedFiles.length > 0 && !this.webCryptoAvailable) {
@@ -651,6 +675,23 @@ export class RecoveryTabManager {
       return;
     }
 
+    const formatAnalysis = analyzePastedShareFormats(shareStrings);
+    if (formatAnalysis.isMixedPlainAndGpg) {
+      this.updateStatus('invalid', t('errors.mixedPastedShareFormats'), statusDiv);
+      recoverBtn.disabled = true;
+      return;
+    }
+    if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount > 0) {
+      this.updateStatus('waiting', t('encryption.passwordRequired'), statusDiv);
+      recoverBtn.disabled = false;
+      return;
+    }
+    if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount === 0 && formatAnalysis.unknownCount > 0) {
+      this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
+      recoverBtn.disabled = true;
+      return;
+    }
+
     const validation = validateShareCollection(shareStrings);
     this.processValidationResult(validation, statusDiv, recoverBtn);
   }
@@ -676,6 +717,8 @@ export class RecoveryTabManager {
         this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
       } else if (validation.errors && validation.errors.some((error) => /duplicate/i.test(error))) {
         this.updateStatus('invalid', t('errors.duplicateShares'), statusDiv);
+      } else if (validation.errors && validation.errors.some((error) => /set identifier|same set/i.test(error))) {
+        this.updateStatus('invalid', t('errors.inconsistentShareSet'), statusDiv);
       } else {
         this.updateStatus('insufficient', t('errors.insufficientShares', validation.threshold, validation.validCount), statusDiv);
       }

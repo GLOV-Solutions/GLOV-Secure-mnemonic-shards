@@ -4,11 +4,11 @@
  */
 
 import { getElement, createElement, toggleElement, toggleClass, addEvent, clearElement } from '../utils/dom.js';
-import { isValidBIP39Word } from '../utils/validation.js';
+import { isValidBIP39Word, validateMnemonic } from '../utils/validation.js';
 import { debounce, isMobile } from '../utils/helpers.js';
 import { BIP39_WORDLIST } from '../constants/bip39-words.js';
 import { UI_CONFIG, SELECTORS, CSS_CLASSES } from '../constants/index.js';
-import { t } from '../utils/i18n.js';
+import { i18n, t } from '../utils/i18n.js';
 
 export class MnemonicInput {
   constructor(wordCount = 12) {
@@ -16,11 +16,9 @@ export class MnemonicInput {
     this.autocompleteTimeouts = new Map();
     this.suggestionCache = new Map();
 
-    // Lazy-load i18n and re-render on language change
-    import('../utils/i18n.js').then(({ i18n }) => {
-      i18n.addListener(() => {
-        this.renderInputs();
-      });
+    // Re-render inputs when the language changes.
+    i18n.addListener(() => {
+      this.renderInputs();
     });
   }
 
@@ -533,14 +531,15 @@ export class MnemonicInput {
   }
 
   /**
-   * Validate that all inputs are non-empty and valid BIP39 words.
-   * @returns {{isValid: boolean, words: string[], hasEmpty: boolean, hasInvalidWord: boolean, invalidWordIndex: number}}
+   * Validate that all inputs are non-empty, use valid BIP-39 words, and pass checksum validation.
+   * @returns {{isValid: boolean, words: string[], hasEmpty: boolean, hasInvalidWord: boolean, invalidWordIndex: number, hasChecksumError: boolean}}
    */
   validateAllInputs() {
     const words = [];
     let hasEmpty = false;
     let hasInvalidWord = false;
     let invalidWordIndex = -1;
+    let hasChecksumError = false;
 
     for (let i = 1; i <= this.wordCount; i++) {
       const input = getElement(SELECTORS.WORD_INPUT(i));
@@ -558,15 +557,21 @@ export class MnemonicInput {
         break;
       }
 
-      words.push(word);
+      words.push(word.toLowerCase());
+    }
+
+    if (!hasEmpty && !hasInvalidWord) {
+      const validation = validateMnemonic(words);
+      hasChecksumError = validation.hasChecksumError;
     }
 
     return {
-      isValid: !hasEmpty && !hasInvalidWord,
+      isValid: !hasEmpty && !hasInvalidWord && !hasChecksumError,
       words,
       hasEmpty,
       hasInvalidWord,
       invalidWordIndex,
+      hasChecksumError,
     };
   }
 

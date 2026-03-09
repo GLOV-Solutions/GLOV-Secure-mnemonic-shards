@@ -396,18 +396,18 @@ body {
   font-size: var(--font-size-sm);
 }
 
-.seed-generation-panel {
+.mnemonic-generation-panel {
   margin-top: var(--space-sm);
   padding-top: var(--space-sm);
   border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
-.seed-generation-actions {
+.mnemonic-generation-actions {
   display: flex;
   gap: var(--space-sm);
 }
 
-.seed-generate-btn {
+.mnemonic-generate-btn {
   border: 1px solid rgba(11, 110, 99, 0.4);
   background: linear-gradient(180deg, rgba(11, 110, 99, 0.12), rgba(20, 163, 154, 0.12));
   color: var(--color-primary);
@@ -418,12 +418,12 @@ body {
   transition: all var(--transition-base);
 }
 
-.seed-generate-btn:hover {
+.mnemonic-generate-btn:hover {
   border-color: rgba(11, 110, 99, 0.8);
   background: linear-gradient(180deg, rgba(11, 110, 99, 0.2), rgba(20, 163, 154, 0.2));
 }
 
-.seed-generation-hint {
+.mnemonic-generation-hint {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }

@@ -86,7 +86,7 @@ class MnemonicSplitApp {
 
     // Encryption listeners inside ShareManager (kept)
     this.shareManager.initEncryptionListeners();
-    this.updateSeedGenerationUI();
+    this.updateMnemonicGenerationUI();
 
     // Hard-disable encryption UI when WebCrypto isn't available (HTTP on ESP32)
     this.disableEncryptionUIIfNeeded();
@@ -142,10 +142,10 @@ class MnemonicSplitApp {
       addEvent(generateBtn, 'click', () => this.handleGenerateShares());
     }
 
-    // Generate mnemonic seed
-    const generateSeedBtn = getElement(SELECTORS.GENERATE_SEED_BTN);
-    if (generateSeedBtn) {
-      addEvent(generateSeedBtn, 'click', () => this.handleGenerateSeed());
+    // Generate mnemonic phrase
+    const generateMnemonicBtn = getElement(SELECTORS.GENERATE_MNEMONIC_BTN);
+    if (generateMnemonicBtn) {
+      addEvent(generateMnemonicBtn, 'click', () => this.handleGenerateMnemonic());
     }
 
     // Recover mnemonic
@@ -207,7 +207,7 @@ class MnemonicSplitApp {
     i18n.addListener((lang) => {
       this.updateLanguageUI(lang);
       this.updateDynamicContent();
-      this.updateSeedGenerationUI();
+      this.updateMnemonicGenerationUI();
       // Re-apply encryption UI rules after language changes (for translated message)
       this.disableEncryptionUIIfNeeded();
     });
@@ -235,35 +235,35 @@ class MnemonicSplitApp {
     this.updateWordInputPlaceholders();
   }
 
-  getSeedGenerationMessages() {
+  getMnemonicGenerationMessages() {
     const isFrench = i18n.getCurrentLanguage && i18n.getCurrentLanguage() === LANGUAGES.FR;
     if (isFrench) {
       return {
-        label: 'Generation de seed',
-        button: 'Generer une seed',
-        hint: 'Genere une seed BIP-39 valide, ou saisis la tienne ci-dessous.',
-        autoShard: 'Generer automatiquement les shards apres la generation de la seed',
-        generated: 'Seed generee avec succes. Tu peux maintenant la modifier ou generer les shards.',
-        failed: 'Echec de la generation de seed. Veuillez reessayer.',
+        label: 'Generation de phrase mnemotechnique',
+        button: 'Generer la phrase',
+        hint: 'Genere une phrase mnemotechnique BIP-39 valide, ou saisis la tienne ci-dessous.',
+        autoShard: 'Generer automatiquement les shares juste apres la generation de la phrase',
+        generated: 'Phrase mnemotechnique generee avec succes. Tu peux maintenant la modifier ou generer les shares.',
+        failed: 'Echec de la generation de la phrase mnemotechnique. Veuillez reessayer.',
       };
     }
 
     return {
-      label: 'Seed generation',
-      button: 'Generate Seed',
-      hint: 'Generate a valid BIP-39 seed phrase, or enter your own below.',
-      autoShard: 'Automatically generate shards right after seed generation',
-      generated: 'Seed generated successfully. You can now edit it or generate shards.',
-      failed: 'Seed generation failed. Please retry.',
+      label: 'Mnemonic Phrase Generation',
+      button: 'Generate Mnemonic',
+      hint: 'Generate a valid BIP-39 mnemonic phrase, or enter your own below.',
+      autoShard: 'Automatically generate shards right after mnemonic generation',
+      generated: 'Mnemonic phrase generated successfully. You can now edit it or generate shards.',
+      failed: 'Mnemonic generation failed. Please retry.',
     };
   }
 
-  updateSeedGenerationUI() {
-    const messages = this.getSeedGenerationMessages();
-    const label = getElement('#seedGenerationLabel');
-    const button = getElement(SELECTORS.GENERATE_SEED_BTN);
-    const hint = getElement('#seedGenerationHint');
-    const autoShardLabel = getElement('#autoShardAfterSeedLabel');
+  updateMnemonicGenerationUI() {
+    const messages = this.getMnemonicGenerationMessages();
+    const label = getElement('#mnemonicGenerationLabel');
+    const button = getElement(SELECTORS.GENERATE_MNEMONIC_BTN);
+    const hint = getElement('#mnemonicGenerationHint');
+    const autoShardLabel = getElement('#autoShardAfterMnemonicLabel');
 
     if (label) label.textContent = messages.label;
     if (button) button.textContent = messages.button;
@@ -358,6 +358,8 @@ class MnemonicSplitApp {
       } else if (validation.hasInvalidWord) {
         this.shareManager.showError(i18n.t('errors.invalidWord', validation.invalidWordIndex));
         this.focusInvalidInput(validation.invalidWordIndex);
+      } else if (validation.hasChecksumError) {
+        this.shareManager.showError(i18n.t('errors.invalidMnemonicChecksum'));
       }
       return;
     }
@@ -369,8 +371,8 @@ class MnemonicSplitApp {
     if (success) this.scrollToResult();
   }
 
-  async handleGenerateSeed() {
-    const messages = this.getSeedGenerationMessages();
+  async handleGenerateMnemonic() {
+    const messages = this.getMnemonicGenerationMessages();
 
     try {
       const words = generateMnemonicWords(this.currentWordCount);
@@ -383,7 +385,7 @@ class MnemonicSplitApp {
 
       this.shareManager.showSuccess(messages.generated);
 
-      const autoShard = getElement(SELECTORS.AUTO_SHARD_AFTER_SEED);
+      const autoShard = getElement(SELECTORS.AUTO_SHARD_AFTER_MNEMONIC);
       if (autoShard && autoShard.checked) {
         await this.handleGenerateShares();
       }
