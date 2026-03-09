@@ -153,7 +153,7 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 Workflow: `.github/workflows/release.yml`
 
 Triggers:
-- Push a tag matching `v*` (example: `v1.0.1`)
+- Push a tag matching `v*` (example: `v1.0.2`)
 - Manual run via `workflow_dispatch` with `tag_name`
 
 Published release assets:

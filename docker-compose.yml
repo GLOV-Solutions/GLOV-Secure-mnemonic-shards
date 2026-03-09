@@ -5,20 +5,14 @@ services:
       dockerfile: Dockerfile
     image: glov-secure-mnemonic-shards:latest
     container_name: glov-secure-mnemonic-shards-app
+    init: true
     ports:
       - "8848:8848"
-    environment:
-      - NODE_ENV=production
-      - PORT=8848
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8848/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:rw,noexec,nosuid,size=64m
