@@ -7,7 +7,7 @@ export const APP_CONFIG = {
   NAME: 'GLOV Secure — Mnemonic Shards',
   DESCRIPTION:
     'Securely split a BIP-39 mnemonic into multiple shards; any chosen threshold of shards can recover the original mnemonic.',
-  VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.2',
+  VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.3',
 };
 
 // Mnemonic configuration
