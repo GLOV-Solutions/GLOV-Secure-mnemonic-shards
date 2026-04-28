@@ -3,7 +3,7 @@
 // - Serves same-origin from cache (or network then caches)
 // - Blocks all cross-origin requests with 403
 
-const CACHE_NAME = 'offline-cache-v1';
+const CACHE_NAME = 'offline-cache-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,7 +37,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for same-origin GET; network fallback then cache
+  // For HTML navigations, prefer network to avoid stale app shell after deploys.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then(async (res) => {
+          const cache = await caches.open(CACHE_NAME);
+          if (res && res.ok) await cache.put(req, res.clone());
+          return res;
+        })
+        .catch(async () => {
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match(req);
+          const root = await cache.match('/');
+          return cached || root || new Response('Offline', { status: 503 });
+        })
+    );
+    return;
+  }
+
+  // Cache-first for same-origin GET assets; network fallback then cache
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(req);
@@ -54,4 +73,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-
