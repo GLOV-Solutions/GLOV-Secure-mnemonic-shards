@@ -110,6 +110,7 @@ export class MnemonicInput {
     }, UI_CONFIG.DELAY.DEBOUNCE);
 
     addEvent(input, 'input', debouncedHandler);
+    addEvent(input, 'paste', (e) => this.handlePaste(e, index));
 
     addEvent(input, 'blur', () => {
       setTimeout(() => {
@@ -123,6 +124,58 @@ export class MnemonicInput {
         this.handleInputChange(input, index);
       }
     });
+  }
+
+  /**
+   * Handle paste behavior for mnemonic words.
+   * Supports pasting a full 12/24-word phrase (e.g. from MetaMask) into an input.
+   * @param {ClipboardEvent} event
+   * @param {number} index
+   */
+  handlePaste(event, index) {
+    const pastedText = event?.clipboardData?.getData('text') || '';
+    const words = pastedText
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (words.length <= 1) {
+      return;
+    }
+
+    // Full mnemonic paste path (12/24 words)
+    if (words.length === 12 || words.length === 24) {
+      event.preventDefault();
+
+      if (this.wordCount !== words.length) {
+        if (typeof window !== 'undefined' && typeof window.setWordCount === 'function') {
+          window.setWordCount(words.length);
+        } else {
+          this.setWordCount(words.length);
+        }
+      }
+
+      this.setWords(words);
+
+      const nextInput = getElement(SELECTORS.WORD_INPUT(this.wordCount));
+      nextInput?.focus();
+      return;
+    }
+
+    // Optional partial-fill from current index if remaining slots match pasted words count
+    const remainingSlots = this.wordCount - index + 1;
+    if (words.length === remainingSlots) {
+      event.preventDefault();
+      for (let offset = 0; offset < words.length; offset++) {
+        const currentIndex = index + offset;
+        const targetInput = getElement(SELECTORS.WORD_INPUT(currentIndex));
+        if (!targetInput) continue;
+        targetInput.value = words[offset];
+        this.validateAndStyleInput(targetInput, currentIndex);
+      }
+      this.checkForDuplicateWords();
+    }
   }
 
   /**

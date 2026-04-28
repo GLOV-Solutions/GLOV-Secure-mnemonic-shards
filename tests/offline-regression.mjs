@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { wordlist as canonicalWordlist } from '@scure/bip39/wordlists/english';
+import { split, combine } from 'shamir-secret-sharing';
 import { BIP39_WORDLIST } from '../src/constants/bip39-words.js';
+import { encryptWithPassword, decryptWithPassword } from '../src/utils/encryption.js';
 import { generateMnemonicWords } from '../src/utils/mnemonic.js';
 import {
   analyzePastedShareFormats,
@@ -114,11 +116,77 @@ function testShareSetConsistency() {
   assertShareNormalizationFails([newShare1, legacyShare], /set identifier/i);
 }
 
-function run() {
+async function withSecureContext(fn) {
+  const previousWindow = globalThis.window;
+  globalThis.window = { isSecureContext: true };
+  try {
+    await fn();
+  } finally {
+    if (previousWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = previousWindow;
+    }
+  }
+}
+
+async function testRecoveryRoundTripPlainAndEncrypted() {
+  const mnemonic = generateMnemonicWords(24).join(' ');
+  const secret = new TextEncoder().encode(mnemonic);
+  const threshold = 3;
+  const total = 5;
+  const setId = 'roundtrip-set';
+  const rawShares = await split(secret, total, threshold);
+
+  const plainShares = rawShares.map((share, index) =>
+    encodeShare({
+      setId,
+      index: index + 1,
+      threshold,
+      total,
+      dataBytes: share,
+    })
+  );
+
+  const normalizedPlain = validateAndNormalizeShareObjects(plainShares);
+  assert.equal(normalizedPlain.isValid, true, 'plain shares should normalize');
+
+  const recoveredPlainBytes = await combine(
+    normalizedPlain.shares.slice(0, threshold).map((entry) => entry.bytes)
+  );
+  const recoveredPlain = new TextDecoder().decode(recoveredPlainBytes).trim();
+  assert.equal(recoveredPlain, mnemonic, 'plain roundtrip should recover the same mnemonic');
+
+  await withSecureContext(async () => {
+    const password = 'Strong#Password42';
+    const encryptedShares = [];
+
+    for (const share of plainShares) {
+      encryptedShares.push(await encryptWithPassword(share, password));
+    }
+
+    const decryptedShares = [];
+    for (const encryptedShare of encryptedShares) {
+      decryptedShares.push(await decryptWithPassword(encryptedShare, password));
+    }
+
+    const normalizedDecrypted = validateAndNormalizeShareObjects(decryptedShares);
+    assert.equal(normalizedDecrypted.isValid, true, 'decrypted shares should normalize');
+
+    const recoveredEncryptedBytes = await combine(
+      normalizedDecrypted.shares.slice(0, threshold).map((entry) => entry.bytes)
+    );
+    const recoveredEncrypted = new TextDecoder().decode(recoveredEncryptedBytes).trim();
+    assert.equal(recoveredEncrypted, mnemonic, 'encrypted roundtrip should recover the same mnemonic');
+  });
+}
+
+async function run() {
   testCanonicalWordlist();
   testMnemonicGeneration();
   testPastedFormatAnalysis();
   testShareSetConsistency();
+  await testRecoveryRoundTripPlainAndEncrypted();
   console.log('offline-regression: all tests passed');
 }
 

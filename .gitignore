@@ -13,3 +13,5 @@ yarn-error.log
 *.sln
 *.sw?
 .claude/
+.npm-cache/
+.codex
