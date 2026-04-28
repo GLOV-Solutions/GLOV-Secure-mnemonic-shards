@@ -6,7 +6,8 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 const appVersion = pkg.version || '0.0.0';
 
 export default defineConfig(({ mode }) => ({
-  base: '/',
+  // Relative asset paths: works on root domains, sub-path hosting, and offline/static folders.
+  base: './',
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },
