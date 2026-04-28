@@ -4,9 +4,10 @@
  */
 
 import { split, combine } from 'shamir-secret-sharing';
+import QRCode from 'qrcode';
 import { getElement, createElement, toggleElement, toggleClass, setHTML, setText, clearElement, addEvent } from '../utils/dom.js';
 import { copyToClipboard, downloadFile, formatDateTime, base64Encode } from '../utils/helpers.js';
-import { analyzePastedShareFormats, validateMnemonic, validateShareCollection, validateAndNormalizeShareObjects } from '../utils/validation.js';
+import { analyzePastedShareFormats, validateMnemonic, validateShareCollection, validateAndNormalizeShareObjects, normalizeShardInput, wrapPlainShareForQr, wrapEncryptedShareForQr } from '../utils/validation.js';
 import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, INFO_MESSAGES, FILE_TEMPLATES } from '../constants/index.js';
 import { t } from '../utils/i18n.js';
 import { encryptWithPassword, decryptWithPassword, validatePasswordStrength, validatePasswordMatch } from '../utils/encryption.js';
@@ -34,6 +35,18 @@ export class ShareManager {
     this.isEncryptionEnabled = false; // Whether encryption is enabled
     this.encryptionPassword = ''; // Encryption password
     this.encryptedShares = []; // Encrypted shares cache
+  }
+
+  getShareMeta(shareContent) {
+    try {
+      const parsed = JSON.parse(atob(shareContent));
+      if (parsed && parsed.index && parsed.threshold) {
+        return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
   }
 
   /**
@@ -270,8 +283,13 @@ export class ShareManager {
     downloadBtn.textContent = t('download');
     addEvent(downloadBtn, 'click', () => this.downloadShare(share, index));
 
+    const qrBtn = createElement('button', ['download-btn']);
+    qrBtn.textContent = 'QR / Print';
+    addEvent(qrBtn, 'click', () => this.showQrPrintView(share, index));
+
     buttons.appendChild(copyBtn);
     buttons.appendChild(downloadBtn);
+    buttons.appendChild(qrBtn);
 
     header.appendChild(title);
     header.appendChild(buttons);
@@ -449,7 +467,18 @@ export class ShareManager {
       return;
     }
 
-    const validation = validateShareCollection(shareStrings);
+    const normalizedEntries = shareStrings.map((line) => normalizeShardInput(line));
+    if (normalizedEntries.some((entry) => !entry.isValid && entry.type === 'invalid')) {
+      this.updateStatus('invalid', t('errors.invalidShareFormat'));
+      recoverBtn.disabled = true;
+      return;
+    }
+
+    const plainCandidates = normalizedEntries
+      .filter((entry) => entry.isValid && entry.type === 'plain')
+      .map((entry) => entry.value);
+
+    const validation = validateShareCollection(plainCandidates);
 
       if (!validation.isValid) {
         if (validation.validCount === 0) {
@@ -510,10 +539,16 @@ export class ShareManager {
       // Detect whether this is pasted OpenPGP armored content.
       const isEncrypted = formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount > 0;
       const validShareData = [];
+      const normalizedEntries = shareStrings.map((line) => normalizeShardInput(line));
 
-      for (const shareStr of shareStrings) {
+      if (normalizedEntries.some((entry) => !entry.isValid && entry.type === 'invalid')) {
+        throw new Error(t('errors.invalidShareFormat'));
+      }
+
+      for (const entry of normalizedEntries) {
+        if (!entry.isValid || entry.type !== 'plain') continue;
         try {
-          const shareData = JSON.parse(atob(shareStr));
+          const shareData = JSON.parse(atob(entry.value));
           if (shareData.threshold && shareData.index && shareData.data) {
             validShareData.push(shareData);
           }
@@ -536,9 +571,10 @@ export class ShareManager {
         // Try to decrypt each line
         this.showInfo(t('encryption.decryptingShares'));
 
-        for (const shareStr of shareStrings) {
+        for (const entry of normalizedEntries) {
+          if (!entry.isValid || entry.type !== 'gpg') continue;
           try {
-            const decryptedShare = await decryptWithPassword(shareStr, password);
+            const decryptedShare = await decryptWithPassword(entry.value, password);
             const shareData = JSON.parse(atob(decryptedShare));
             if (shareData.threshold && shareData.index && shareData.data) {
               validShareData.push(shareData);
@@ -550,7 +586,7 @@ export class ShareManager {
               isRetry = true;
               try {
                 password = await this.getPasswordFromDialog(isRetry);
-                const decryptedShare = await decryptWithPassword(shareStr, password);
+                const decryptedShare = await decryptWithPassword(entry.value, password);
                 const shareData = JSON.parse(atob(decryptedShare));
                 if (shareData.threshold && shareData.index && shareData.data) {
                   validShareData.push(shareData);
@@ -648,14 +684,17 @@ export class ShareManager {
 
         try {
           if (typeof share === 'string') {
-            // Raw PGP?
-            if (share.startsWith('-----BEGIN PGP MESSAGE-----')) {
+            const normalized = normalizeShardInput(share);
+            if (normalized.isValid && normalized.type === 'gpg') {
               isEncrypted = true;
-              validShareData.push({ encrypted: true, content: share });
+              validShareData.push({ encrypted: true, content: normalized.value });
+              continue;
+            }
+            if (!normalized.isValid || normalized.type !== 'plain') {
               continue;
             }
 
-            const shareData = JSON.parse(atob(share));
+            const shareData = JSON.parse(atob(normalized.value));
             if (shareData.threshold && shareData.index && shareData.data) {
               validShareData.push(shareData);
             }
@@ -1011,6 +1050,119 @@ export class ShareManager {
         throw new Error(t('errors.invalidMnemonicChecksum'));
       }
       throw new Error(t('errors.invalidShareFormat'));
+    }
+  }
+
+  getShortSetId(setId) {
+    if (typeof setId !== 'string' || !setId.trim()) return 'N/A';
+    const value = setId.trim();
+    if (value.length <= 12) return value;
+    return `${value.slice(0, 8)}...${value.slice(-4)}`;
+  }
+
+  getQrSecurityWarning() {
+    return t('qr.securityWarning');
+  }
+
+  async buildQrPayload(shareContent) {
+    if (this.isEncryptionEnabled) {
+      const encryptionValidation = this.validateEncryptionSettings();
+      if (!encryptionValidation.isValid) {
+        throw new Error(encryptionValidation.error);
+      }
+
+      const encrypted = await encryptWithPassword(shareContent, this.encryptionPassword);
+      this.clearEncryptionPassword();
+
+      return {
+        payload: wrapEncryptedShareForQr(encrypted),
+        isEncryptedQr: true,
+        recommendation: t('qr.recommendationEncrypted'),
+      };
+    }
+
+    return {
+      payload: wrapPlainShareForQr(shareContent),
+      isEncryptedQr: false,
+      recommendation: t('qr.recommendationPlain'),
+    };
+  }
+
+  async showQrPrintView(shareContent, shareIndex) {
+    const popup = window.open('', '_blank', 'width=900,height=980');
+    if (!popup) {
+      this.showError('QR/Print failed: Unable to open print view.');
+      return;
+    }
+
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Loading QR</title></head><body style="font-family:Arial,sans-serif;padding:24px;">Preparing QR / Print view...</body></html>`);
+    popup.document.close();
+
+    try {
+      const meta = this.getShareMeta(shareContent);
+      if (!meta) {
+        throw new Error('Invalid share payload.');
+      }
+
+      const qrData = await this.buildQrPayload(shareContent);
+      const qrDataUrl = await QRCode.toDataURL(qrData.payload, {
+        errorCorrectionLevel: 'M',
+        width: 320,
+        margin: 1,
+      });
+
+      const warning = this.getQrSecurityWarning();
+      const setId = this.getShortSetId(meta.setId);
+      const safePayload = qrData.payload.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const safeWarning = warning.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const mode = qrData.isEncryptedQr ? t('qr.modeEncrypted') : t('qr.modePlain');
+
+      popup.document.write(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GLOV Secure — Mnemonic Shards QR</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #111; margin: 18px; }
+    .sheet { max-width: 760px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; padding: 18px; }
+    h1 { font-size: 24px; margin: 0 0 6px; }
+    .mode { font-size: 13px; color: #444; margin-bottom: 10px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 14px; margin: 10px 0 12px; }
+    .meta strong { font-weight: 700; }
+    .qr { text-align: center; margin: 16px 0; }
+    .payload { font-family: monospace; font-size: 12px; word-break: break-all; background: #f8f8f8; border: 1px solid #ececec; border-radius: 8px; padding: 10px; }
+    .warn { margin-top: 14px; background: #fff4d6; border: 1px solid #f1d183; border-radius: 8px; padding: 10px; font-size: 13px; }
+    .actions { margin-top: 16px; text-align: center; }
+    button { padding: 9px 14px; border-radius: 8px; border: 1px solid #bbb; background: #fff; cursor: pointer; margin: 0 6px; }
+    @media print { .actions { display: none; } body { margin: 0; } .sheet { border: none; } }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <h1>GLOV Secure — Mnemonic Shards</h1>
+    <div class="mode"><strong>${mode}</strong> — ${qrData.recommendation}</div>
+    <div class="meta">
+      <div><strong>Shard number:</strong> ${meta.index || shareIndex}</div>
+      <div><strong>Total shards:</strong> ${meta.total || 'N/A'}</div>
+      <div><strong>Threshold required:</strong> ${meta.threshold}</div>
+      <div><strong>Set ID:</strong> ${setId}</div>
+      <div><strong>Generation date:</strong> ${formatDateTime()}</div>
+    </div>
+    <div class="qr"><img src="${qrDataUrl}" alt="Shard QR code" /></div>
+    <div class="payload">${safePayload}</div>
+    <div class="warn"><strong>Security warning:</strong> ${safeWarning}</div>
+    <div class="actions">
+      <button onclick="window.print()">Print</button>
+      <button onclick="window.close()">Close</button>
+    </div>
+  </div>
+</body>
+</html>`);
+      popup.document.close();
+    } catch (error) {
+      this.showError(`QR/Print failed: ${error.message}`);
+    } finally {
+      this.clearEncryptionPassword();
     }
   }
 

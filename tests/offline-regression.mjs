@@ -6,9 +6,12 @@ import { encryptWithPassword, decryptWithPassword } from '../src/utils/encryptio
 import { generateMnemonicWords } from '../src/utils/mnemonic.js';
 import {
   analyzePastedShareFormats,
+  normalizeShardInput,
   validateAndNormalizeShareObjects,
   validateMnemonic,
   validateShareCollection,
+  wrapEncryptedShareForQr,
+  wrapPlainShareForQr,
 } from '../src/utils/validation.js';
 
 function encodeBytes(bytes) {
@@ -116,6 +119,46 @@ function testShareSetConsistency() {
   assertShareNormalizationFails([newShare1, legacyShare], /set identifier/i);
 }
 
+function testQrWrappersAndLegacyCompatibility() {
+  const plainShare = encodeShare({
+    setId: 'set-qr',
+    index: 1,
+    threshold: 2,
+    total: 3,
+    dataBytes: Uint8Array.from([11, 22, 33]),
+  });
+
+  const plainQr = wrapPlainShareForQr(plainShare);
+  const normalizedPlainQr = normalizeShardInput(plainQr);
+  assert.equal(normalizedPlainQr.isValid, true, 'plain QR wrapper should be valid');
+  assert.equal(normalizedPlainQr.type, 'plain', 'plain QR should normalize as plain payload');
+  assert.equal(normalizedPlainQr.value, plainShare, 'plain QR wrapper should unwrap to legacy payload');
+
+  const armored =
+    '-----BEGIN PGP MESSAGE-----\nVersion: OpenPGP\n\nwcBMA1test\n=abcd\n-----END PGP MESSAGE-----';
+  const gpgQr = wrapEncryptedShareForQr(armored);
+  const normalizedGpgQr = normalizeShardInput(gpgQr);
+  assert.equal(normalizedGpgQr.isValid, true, 'GPG QR wrapper should be valid');
+  assert.equal(normalizedGpgQr.type, 'gpg', 'GPG QR should normalize as encrypted payload');
+  assert.equal(normalizedGpgQr.value, armored, 'GPG QR wrapper should unwrap to armored message');
+
+  const multiShardQr = `${plainQr}${plainQr}`;
+  const normalizedMulti = normalizeShardInput(multiShardQr);
+  assert.equal(normalizedMulti.isValid, false, 'QR containing multiple shards should be rejected');
+
+  const unknownQr = 'GLOV-SHARD-V1:not-a-valid-payload';
+  const normalizedUnknown = normalizeShardInput(unknownQr);
+  assert.equal(normalizedUnknown.isValid, false, 'invalid QR payload should be rejected');
+
+  const legacyPlain = normalizeShardInput(plainShare);
+  assert.equal(legacyPlain.isValid, true, 'legacy .txt payload should remain valid');
+  assert.equal(legacyPlain.type, 'plain', 'legacy .txt payload should normalize as plain');
+
+  const legacyGpg = normalizeShardInput(armored);
+  assert.equal(legacyGpg.isValid, true, 'legacy .gpg armored content should remain valid');
+  assert.equal(legacyGpg.type, 'gpg', 'legacy .gpg payload should normalize as gpg');
+}
+
 async function withSecureContext(fn) {
   const previousWindow = globalThis.window;
   globalThis.window = { isSecureContext: true };
@@ -186,6 +229,7 @@ async function run() {
   testMnemonicGeneration();
   testPastedFormatAnalysis();
   testShareSetConsistency();
+  testQrWrappersAndLegacyCompatibility();
   await testRecoveryRoundTripPlainAndEncrypted();
   console.log('offline-regression: all tests passed');
 }

@@ -5,6 +5,7 @@ Privacy‑first, offline tool to split a BIP‑39 mnemonic into multiple shards 
 - 12 or 24 words, 3–7 total shards, 2–5 recovery threshold
 - Full BIP‑39 mnemonic validation (wordlist + checksum), auto‑complete suggestions, duplicate detection
 - Optional AES‑256 encryption via OpenPGP
+- Optional per-shard QR / Print export (plain or encrypted QR wrapper)
 - No network calls; ideal for air‑gapped usage
 
 ## Security Notice
@@ -100,9 +101,13 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 - Select total shards (3–7) and threshold (2–5).
 - Optional: enable encryption and set a strong password (AES‑256 via OpenPGP).
 - Click “Generate Shares”, then copy/download each shard.
+- Optional: click `QR / Print` on a shard to open a printable page with one QR for that shard only.
 
 ### Recover
 - “Paste” tab: paste one shard per line.
+- Paste/recovery also accepts QR wrappers:
+  - `GLOV-SHARD-V1:<base64-share-payload>`
+  - `GLOV-SHARD-GPG-V1:<base64url-of-armored-pgp-message>`
 - “Files” tab: drag‑and‑drop `.txt` (standard) and/or `.gpg` (encrypted) shards.
 - If `.gpg` files are present, enter the decryption password.
 - Click “Recover Mnemonic” once the threshold is met.
@@ -121,6 +126,10 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 - Encrypted (`.gpg`):
   - OpenPGP ASCII armor (works with `gpg --decrypt shard.gpg`).
   - All shards in a set use the same password chosen at generation time.
+- QR wrappers (for print/scan workflows):
+  - Plain shard QR: `GLOV-SHARD-V1:<payload_base64>`
+  - Encrypted shard QR (recommended for third-party storage): `GLOV-SHARD-GPG-V1:<base64url(armored PGP)>`
+  - One QR must contain one shard only (never multiple shards, never the full mnemonic).
 
 ## Tech Stack
 

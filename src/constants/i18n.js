@@ -150,6 +150,14 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
       validShares: (valid, threshold) =>
         `Detected ${valid} valid shares (need ${threshold}), recovery can start`,
     },
+    qr: {
+      securityWarning:
+        'The QR code facilitates recovery, but increases the risk of visual copying. For third-party storage, prefer encrypted QR and keep the password separately.',
+      modeEncrypted: 'Encrypted QR mode',
+      modePlain: 'Plain QR mode',
+      recommendationEncrypted: 'Encrypted QR recommended for third-party storage',
+      recommendationPlain: 'Plain QR. Enable encryption for third-party storage.',
+    },
 
     // File status
     fileStatus: {
@@ -367,6 +375,14 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
       recovering: 'Récupération en cours...',
       validShares: (valid, threshold) =>
         `${valid} shares valides détectées (besoin de ${threshold}), la récupération peut commencer`,
+    },
+    qr: {
+      securityWarning:
+        'Le QR code facilite la récupération, mais augmente le risque de copie visuelle. Pour une conservation chez un tiers, privilégier le QR chiffré et conserver le mot de passe séparément.',
+      modeEncrypted: 'Mode QR chiffré',
+      modePlain: 'Mode QR non chiffré',
+      recommendationEncrypted: 'QR chiffré recommandé pour une conservation chez un tiers',
+      recommendationPlain: 'QR non chiffré. Activez le chiffrement pour une conservation chez un tiers.',
     },
 
     fileStatus: {

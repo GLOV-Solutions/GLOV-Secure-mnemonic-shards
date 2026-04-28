@@ -5,6 +5,129 @@ import { wordlist as englishWordlist } from '@scure/bip39/wordlists/english';
  * Validation utility functions
  */
 
+export const QR_PLAIN_PREFIX = 'GLOV-SHARD-V1:';
+export const QR_GPG_PREFIX = 'GLOV-SHARD-GPG-V1:';
+
+function utf8Encode(value) {
+  return new TextEncoder().encode(value);
+}
+
+function utf8Decode(bytes) {
+  return new TextDecoder().decode(bytes);
+}
+
+function bytesToBinary(bytes) {
+  return Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+}
+
+function binaryToBytes(binary) {
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function toBase64Url(value) {
+  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function fromBase64Url(value) {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padLength = normalized.length % 4 === 0 ? 0 : 4 - (normalized.length % 4);
+  const padded = normalized + '='.repeat(padLength);
+  return atob(padded);
+}
+
+export function wrapPlainShareForQr(sharePayloadBase64) {
+  if (typeof sharePayloadBase64 !== 'string' || !sharePayloadBase64.trim()) {
+    throw new Error('Invalid plain share payload.');
+  }
+  return `${QR_PLAIN_PREFIX}${sharePayloadBase64.trim()}`;
+}
+
+export function wrapEncryptedShareForQr(armoredMessage) {
+  if (typeof armoredMessage !== 'string' || !armoredMessage.trim()) {
+    throw new Error('Invalid encrypted share payload.');
+  }
+  const bytes = utf8Encode(armoredMessage.trim());
+  const binary = bytesToBinary(bytes);
+  return `${QR_GPG_PREFIX}${toBase64Url(binary)}`;
+}
+
+function decodeQrGpgPayload(base64UrlPayload) {
+  try {
+    const binary = fromBase64Url(base64UrlPayload);
+    const bytes = binaryToBytes(binary);
+    return utf8Decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function containsMultipleQrWrappers(value) {
+  const plainCount = (value.match(/GLOV-SHARD-V1:/g) || []).length;
+  const gpgCount = (value.match(/GLOV-SHARD-GPG-V1:/g) || []).length;
+  return plainCount + gpgCount > 1;
+}
+
+/**
+ * Normalize user-provided shard payloads.
+ * Accepts legacy plain base64, legacy armored PGP, and QR wrappers.
+ * @param {string} value
+ * @returns {{isValid:boolean, type:'plain'|'gpg'|'unknown'|'invalid', value:string|null, error?:string}}
+ */
+export function normalizeShardInput(value) {
+  if (typeof value !== 'string') {
+    return { isValid: false, type: 'invalid', value: null, error: 'Unsupported shard input type.' };
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { isValid: false, type: 'invalid', value: null, error: 'Empty shard input.' };
+  }
+
+  if (containsMultipleQrWrappers(trimmed)) {
+    return { isValid: false, type: 'invalid', value: null, error: 'QR payload contains multiple shard wrappers.' };
+  }
+
+  if (trimmed.startsWith(QR_PLAIN_PREFIX)) {
+    const payload = trimmed.slice(QR_PLAIN_PREFIX.length).trim();
+    if (!payload || payload.includes('\n') || payload.includes('\r')) {
+      return { isValid: false, type: 'invalid', value: null, error: 'Invalid QR plain payload.' };
+    }
+    if (!parseShareData(payload)) {
+      return { isValid: false, type: 'invalid', value: null, error: 'Invalid QR plain payload.' };
+    }
+    return { isValid: true, type: 'plain', value: payload };
+  }
+
+  if (trimmed.startsWith(QR_GPG_PREFIX)) {
+    const payload = trimmed.slice(QR_GPG_PREFIX.length).trim();
+    if (!payload || payload.includes('\n') || payload.includes('\r')) {
+      return { isValid: false, type: 'invalid', value: null, error: 'Invalid QR encrypted payload.' };
+    }
+    const decodedArmored = decodeQrGpgPayload(payload);
+    if (!decodedArmored || !decodedArmored.includes('-----BEGIN PGP MESSAGE-----')) {
+      return { isValid: false, type: 'invalid', value: null, error: 'Invalid QR encrypted payload.' };
+    }
+    if ((decodedArmored.match(/-----BEGIN PGP MESSAGE-----/g) || []).length > 1) {
+      return { isValid: false, type: 'invalid', value: null, error: 'QR payload contains multiple shards.' };
+    }
+    return { isValid: true, type: 'gpg', value: decodedArmored };
+  }
+
+  if (parseShareData(trimmed)) {
+    return { isValid: true, type: 'plain', value: trimmed };
+  }
+
+  if (trimmed.includes('-----BEGIN PGP MESSAGE-----') || trimmed.includes('-----END PGP MESSAGE-----')) {
+    const pgpBlocks = (trimmed.match(/-----BEGIN PGP MESSAGE-----/g) || []).length;
+    if (pgpBlocks > 1) {
+      return { isValid: false, type: 'invalid', value: null, error: 'Multiple encrypted shards detected in one payload.' };
+    }
+    return { isValid: true, type: 'gpg', value: trimmed };
+  }
+
+  return { isValid: false, type: 'unknown', value: null, error: 'Unknown shard payload format.' };
+}
+
 /**
  * Validate if a word is a valid BIP39 word
  * @param {string[]} wordList - BIP39 word list
@@ -303,22 +426,23 @@ export function analyzePastedShareFormats(shareStrings) {
   let unknownCount = 0;
 
   (Array.isArray(shareStrings) ? shareStrings : []).forEach((entry) => {
-    const value = typeof entry === 'string' ? entry.trim() : '';
-    if (!value) {
+    const normalized = normalizeShardInput(typeof entry === 'string' ? entry : '');
+    if (!normalized.isValid) {
+      if (normalized.type === 'invalid' || normalized.type === 'unknown') {
+        unknownCount++;
+      }
       return;
     }
 
-    if (parseShareData(value)) {
+    if (normalized.type === 'plain') {
       plainCount++;
       return;
     }
 
-    if (value.includes('-----BEGIN PGP MESSAGE-----') || value.includes('-----END PGP MESSAGE-----')) {
+    if (normalized.type === 'gpg') {
       gpgCount++;
       return;
     }
-
-    unknownCount++;
   });
 
   return {
