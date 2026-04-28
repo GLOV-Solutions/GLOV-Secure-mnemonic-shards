@@ -284,7 +284,7 @@ export class ShareManager {
     addEvent(downloadBtn, 'click', () => this.downloadShare(share, index));
 
     const qrBtn = createElement('button', ['download-btn']);
-    qrBtn.textContent = 'QR / Print';
+    qrBtn.textContent = t('qr.button');
     addEvent(qrBtn, 'click', () => this.showQrPrintView(share, index));
 
     buttons.appendChild(copyBtn);
@@ -1091,17 +1091,17 @@ export class ShareManager {
   async showQrPrintView(shareContent, shareIndex) {
     const popup = window.open('', '_blank', 'width=900,height=980');
     if (!popup) {
-      this.showError('QR/Print failed: Unable to open print view.');
+      this.showError(`${t('qr.errorPrefix')}: ${t('qr.popupBlocked')}`);
       return;
     }
 
-    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Loading QR</title></head><body style="font-family:Arial,sans-serif;padding:24px;">Preparing QR / Print view...</body></html>`);
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${t('qr.popupLoadingTitle')}</title></head><body style="font-family:Arial,sans-serif;padding:24px;">${t('qr.popupLoadingBody')}</body></html>`);
     popup.document.close();
 
     try {
       const meta = this.getShareMeta(shareContent);
       if (!meta) {
-        throw new Error('Invalid share payload.');
+        throw new Error(t('qr.invalidPayload'));
       }
 
       const qrData = await this.buildQrPayload(shareContent);
@@ -1118,10 +1118,10 @@ export class ShareManager {
       const mode = qrData.isEncryptedQr ? t('qr.modeEncrypted') : t('qr.modePlain');
 
       popup.document.write(`<!doctype html>
-<html lang="en">
+<html lang="${document.documentElement.getAttribute('lang') || 'en'}">
 <head>
   <meta charset="utf-8" />
-  <title>GLOV Secure — Mnemonic Shards QR</title>
+  <title>${t('qr.popupDocumentTitle')}</title>
   <style>
     body { font-family: Arial, sans-serif; color: #111; margin: 18px; }
     .sheet { max-width: 760px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; padding: 18px; }
@@ -1139,28 +1139,46 @@ export class ShareManager {
 </head>
 <body>
   <div class="sheet">
-    <h1>GLOV Secure — Mnemonic Shards</h1>
+    <h1>${t('qr.popupHeading')}</h1>
     <div class="mode"><strong>${mode}</strong> — ${qrData.recommendation}</div>
     <div class="meta">
-      <div><strong>Shard number:</strong> ${meta.index || shareIndex}</div>
-      <div><strong>Total shards:</strong> ${meta.total || 'N/A'}</div>
-      <div><strong>Threshold required:</strong> ${meta.threshold}</div>
-      <div><strong>Set ID:</strong> ${setId}</div>
-      <div><strong>Generation date:</strong> ${formatDateTime()}</div>
+      <div><strong>${t('qr.shardNumberLabel')}</strong> ${meta.index || shareIndex}</div>
+      <div><strong>${t('qr.totalShardsLabel')}</strong> ${meta.total || t('qr.notAvailable')}</div>
+      <div><strong>${t('qr.thresholdLabel')}</strong> ${meta.threshold}</div>
+      <div><strong>${t('qr.setIdLabel')}</strong> ${setId}</div>
+      <div><strong>${t('qr.generationDateLabel')}</strong> ${formatDateTime()}</div>
     </div>
-    <div class="qr"><img src="${qrDataUrl}" alt="Shard QR code" /></div>
+    <div class="qr"><img src="${qrDataUrl}" alt="${t('qr.qrAlt')}" /></div>
     <div class="payload">${safePayload}</div>
-    <div class="warn"><strong>Security warning:</strong> ${safeWarning}</div>
+    <div class="warn"><strong>${t('qr.securityWarningLabel')}</strong> ${safeWarning}</div>
     <div class="actions">
-      <button onclick="window.print()">Print</button>
-      <button onclick="window.close()">Close</button>
+      <button id="qrPrintBtn" type="button">${t('qr.printButton')}</button>
+      <button id="qrCloseBtn" type="button">${t('qr.closeButton')}</button>
     </div>
   </div>
 </body>
 </html>`);
+      const printBtn = popup.document.getElementById('qrPrintBtn');
+      const closeBtn = popup.document.getElementById('qrCloseBtn');
+      if (printBtn) {
+        printBtn.addEventListener('click', () => popup.print());
+      }
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => popup.close());
+      }
       popup.document.close();
     } catch (error) {
-      this.showError(`QR/Print failed: ${error.message}`);
+      this.showError(`${t('qr.errorPrefix')}: ${error.message}`);
+      const safeError = String(error.message || t('qr.invalidPayload'))
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${t('qr.errorTitle')}</title></head><body style="font-family:Arial,sans-serif;padding:24px;"><h2>${t('qr.errorTitle')}</h2><p>${safeError}</p><button id="qrErrorCloseBtn" type="button">${t('qr.closeButton')}</button></body></html>`);
+      const errorCloseBtn = popup.document.getElementById('qrErrorCloseBtn');
+      if (errorCloseBtn) {
+        errorCloseBtn.addEventListener('click', () => popup.close());
+      }
+      popup.document.close();
     } finally {
       this.clearEncryptionPassword();
     }
