@@ -11,8 +11,8 @@
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
 
     <title>GLOV Secure - Mnemonic Shards (Offline Shamir & Optional SLIP-39)</title>
-    <script type="module" crossorigin src="./assets/index-ML915cca.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B7E_z1nc.css">
+    <script type="module" crossorigin src="./assets/index-BIzXZda6.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bmz8wYM_.css">
   </head>
   <body data-theme="dark">
     <div class="container">
@@ -107,6 +107,18 @@
                 <option value="5">5 shares</option>
               </select>
             </div>
+
+            <div class="control-group">
+              <label data-i18n="backupFormatLabel">Backup format</label>
+              <select id="backupFormat">
+                <option value="glov" data-i18n="backupFormatGlov">GLOV Secure format - recommended</option>
+                <option value="slip39" data-i18n="backupFormatSlip39">SLIP-39 compatible format - wallet compatibility</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="alert alert-info" data-i18n="backupFormatHelp">
+            Use GLOV Secure format for encrypted notarial backups and printable shard sheets. Use SLIP-39 compatible format only when you need interoperability with SLIP-39 wallets.
           </div>
 
           <div class="mnemonic-generation-panel">
@@ -253,6 +265,8 @@
               <div class="input-status" id="inputStatus">
                 <span class="status-text" data-i18n="waitingForInput">Waiting for shard input...</span>
               </div>
+
+              <div class="alert alert-info" id="detectedFormatBadge" style="display: none"></div>
 
               <textarea
                 class="recover-input"
