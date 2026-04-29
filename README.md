@@ -6,7 +6,13 @@ Privacy‑first, offline tool to split a BIP‑39 mnemonic into multiple shards 
 - Full BIP‑39 mnemonic validation (wordlist + checksum), auto‑complete suggestions, duplicate detection
 - Optional AES‑256 encryption via OpenPGP
 - Optional per-shard QR / Print export (plain or encrypted QR wrapper)
+- Advanced compatibility mode: SLIP-39 share generation/recovery for interoperable wallet workflows
 - No network calls; ideal for air‑gapped usage
+
+## User Documentation
+
+- End-user guide (EN): `docs/user-guide.md`
+- End-user guide (FR): `docs/guide-utilisateur.md`
 
 ## Security Notice
 
@@ -99,18 +105,34 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 - Choose 12 or 24 words.
 - Generate or enter the mnemonic phrase (auto‑complete + full BIP‑39 checksum validation).
 - Select total shards (3–7) and threshold (2–5).
+- Select backup format:
+  - `GLOV Secure format` (recommended/default): notarial backup workflow with `.txt`, optional `.gpg`, QR/Print.
+  - `SLIP-39 compatible format` (advanced): interoperability with SLIP-39 compatible wallets/tools.
 - Optional: enable encryption and set a strong password (AES‑256 via OpenPGP).
 - Click “Generate Shares”, then copy/download each shard.
 - Optional: click `QR / Print` on a shard to open a printable page with one QR for that shard only.
 
 ### Recover
 - “Paste” tab: paste one shard per line.
+- Paste/recovery accepts:
+  - GLOV legacy Base64 payloads
+  - `GLOV-SHARD-V1` wrappers
+  - `GLOV-SHARD-GPG-V1` wrappers
+  - OpenPGP armored shares
+  - SLIP-39 share phrases
 - Paste/recovery also accepts QR wrappers:
   - `GLOV-SHARD-V1:<base64-share-payload>`
   - `GLOV-SHARD-GPG-V1:<base64url-of-armored-pgp-message>`
 - “Files” tab: drag‑and‑drop `.txt` (standard) and/or `.gpg` (encrypted) shards.
 - If `.gpg` files are present, enter the decryption password.
 - Click “Recover Mnemonic” once the threshold is met.
+- Recovery format detection badge:
+  - `Detected format: GLOV Secure shards`
+  - `Detected format: GLOV Secure encrypted shards`
+  - `Detected format: SLIP-39 compatible shares`
+- Mixed-format protection:
+  - GLOV and SLIP-39 cannot be mixed in one recovery set.
+  - Incompatible SLIP-39 sets cannot be mixed.
 
 ### Best practices
 - Store shards separately; never keep all shards together.
@@ -126,6 +148,10 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 - Encrypted (`.gpg`):
   - OpenPGP ASCII armor (works with `gpg --decrypt shard.gpg`).
   - All shards in a set use the same password chosen at generation time.
+- SLIP-39 compatible shares:
+  - Human-readable SLIP-39 word phrases (one share per phrase).
+  - Exported as plain text and available in QR/Print view.
+  - `.gpg` export is intentionally disabled for SLIP-39 mode in the current version.
 - QR wrappers (for print/scan workflows):
   - Plain shard QR: `GLOV-SHARD-V1:<payload_base64>`
   - Encrypted shard QR (recommended for third-party storage): `GLOV-SHARD-GPG-V1:<base64url(armored PGP)>`
@@ -143,6 +169,7 @@ jq -r '.dist.files[] | select(.path=="index.single.html") | .sha256' dist/manife
 
 - `index.html` — Main UI, loads `src/main.js`
 - `src/components/` — UI logic (MnemonicInput, ShareManager, RecoveryTabManager, PasswordDialog)
+- `src/formats/` — Format modules (`glovShard.js`, `slip39Shard.js`, `formatDetector.js`)
 - `src/utils/` — Validation, i18n, helpers, encryption, DOM utils
 - `src/constants/` — Config, i18n, BIP‑39 list
 - `public/` — Service worker, favicon, assets
