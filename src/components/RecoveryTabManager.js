@@ -4,10 +4,16 @@
  */
 
 import { getElement, createElement, toggleElement, toggleClass, setHTML, clearElement, addEvent } from '../utils/dom.js';
-import { validateShareCollection, analyzePastedShareFormats } from '../utils/validation.js';
+import { validateShareCollection } from '../utils/validation.js';
 import { decryptWithPassword, detectGpgFormat } from '../utils/encryption.js';
 import { t } from '../utils/i18n.js';
 import { passwordDialog } from './PasswordDialog.js';
+import {
+  detectShareFormat,
+  detectShareCollectionFormat,
+  getDetectedFormatLabel,
+  SHARE_FORMAT,
+} from '../formats/formatDetector.js';
 
 function canUseWebCrypto() {
   return (
@@ -32,6 +38,7 @@ export class RecoveryTabManager {
     this.hasEncryptedFiles = false; // whether there are encrypted files
     this.uploadPassword = ''; // decryption password for uploaded files
     this.passwordVisible = false; // whether password field is visible
+    this.currentDetectedFormat = SHARE_FORMAT.UNKNOWN;
 
     // NEW: cache capability
     this.webCryptoAvailable = canUseWebCrypto();
@@ -308,7 +315,7 @@ export class RecoveryTabManager {
         fileData.contentFormat = 'text';
 
         const shareData = this.parseShareContent(content);
-        if (shareData && !shareData.encrypted) {
+        if (shareData) {
           fileData.shareData = shareData;
           fileData.status = 'valid';
         } else {
@@ -350,7 +357,7 @@ export class RecoveryTabManager {
         file.decryptedContent = decryptedContent;
 
         const shareData = this.parseShareContent(decryptedContent);
-        if (shareData && !shareData.encrypted) {
+        if (shareData) {
           file.shareData = shareData;
           file.status = 'valid';
           decryptionSuccess = true;
@@ -392,8 +399,8 @@ export class RecoveryTabManager {
     }
 
     const allShares = this.uploadedFiles
-      .filter((file) => file.status === 'valid' && file.shareData)
-      .map((file) => file.shareData);
+      .filter((file) => file.status === 'valid' && file.shareData && typeof file.shareData.rawShare === 'string')
+      .map((file) => file.shareData.rawShare);
 
     const encryptedFiles = this.uploadedFiles.filter((file) => file.status === 'encrypted');
     const hasEncryptedUploads = this.uploadedFiles.some((file) => file.isEncrypted === true);
@@ -403,6 +410,7 @@ export class RecoveryTabManager {
       this.updateStatus('invalid', t('errors.mixedUploadedShareFormats'), statusDiv);
       recoverBtn.disabled = true;
       this.togglePasswordSection(false);
+      this.clearDetectedFormatBadge();
       return;
     }
 
@@ -418,30 +426,56 @@ export class RecoveryTabManager {
     if (allShares.length === 0 && !encryptedStillThere) {
       this.updateStatus('invalid', t('errors.noValidShares'), statusDiv);
       recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
       return;
     }
 
     if (allShares.length === 0 && encryptedStillThere) {
       this.updateStatus('waiting', t('encryption.passwordRequired'), statusDiv);
       recoverBtn.disabled = false;
+      this.updateDetectedFormatBadge(SHARE_FORMAT.GLOV_SECURE_ENCRYPTED);
       return;
     }
 
-    const validation = validateShareCollection(allShares);
+    const detected = detectShareCollectionFormat(allShares);
 
-    if (validation.isValid) {
-      this.updateStatus('valid', t('sharesDecrypted', validation.validCount, validation.threshold), statusDiv);
-      recoverBtn.disabled = false;
-      this.currentThreshold = validation.threshold;
-      this.validShareCount = validation.validCount;
-    } else {
-      if (validation.validCount < validation.threshold) {
-        this.updateStatus('insufficient', t('insufficientSharesAfterDecryption', validation.threshold, validation.validCount), statusDiv);
-      } else {
-        this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
-      }
+    if (detected.hasIncompatibleSlip39Sets) {
+      this.updateStatus('invalid', t('errors.incompatibleSlip39Sets'), statusDiv);
       recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
+      return;
     }
+
+    if (detected.isMixed) {
+      this.updateStatus('invalid', t('errors.mixedGlovAndSlip39'), statusDiv);
+      recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
+      return;
+    }
+
+    if (detected.format === SHARE_FORMAT.SLIP39) {
+      this.updateStatus(
+        'valid',
+        `Detected ${allShares.length} SLIP-39 share(s). Recovery can start when threshold is met.`,
+        statusDiv,
+      );
+      recoverBtn.disabled = false;
+      this.validShareCount = allShares.length;
+      this.currentThreshold = 0;
+      this.updateDetectedFormatBadge(SHARE_FORMAT.SLIP39);
+      return;
+    }
+
+    if (detected.format === SHARE_FORMAT.GLOV_SECURE) {
+      const validation = validateShareCollection(allShares);
+      this.processValidationResult(validation, statusDiv, recoverBtn);
+      this.updateDetectedFormatBadge(SHARE_FORMAT.GLOV_SECURE);
+      return;
+    }
+
+    this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
+    recoverBtn.disabled = true;
+    this.clearDetectedFormatBadge();
   }
 
   async readFileContent(file) {
@@ -512,46 +546,15 @@ export class RecoveryTabManager {
   }
 
   parseShareContent(content) {
-    try {
-      try {
-        const trimmedContent = content.trim();
-
-        if (trimmedContent.startsWith('-----BEGIN PGP MESSAGE-----')) {
-          return { encrypted: true, content: trimmedContent };
-        }
-
-        const shareData = JSON.parse(atob(trimmedContent));
-        if (shareData.threshold && shareData.index !== undefined && shareData.data) {
-          return shareData;
-        }
-      } catch (_e) {
-        // continue
-      }
-
-      const lines = content
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-
-      for (const line of lines) {
-        try {
-          if (line.startsWith('-----BEGIN PGP MESSAGE-----')) {
-            return { encrypted: true, content: line };
-          }
-
-          const shareData = JSON.parse(atob(line));
-          if (shareData.threshold && shareData.index !== undefined && shareData.data) {
-            return shareData;
-          }
-        } catch (_e) {
-          // continue
-        }
-      }
-
-      return { encrypted: true, content: content.trim() };
-    } catch (_error) {
-      return { encrypted: true, content: content.trim() };
+    const detected = detectShareFormat(typeof content === 'string' ? content : '');
+    if (!detected.extractedShares || detected.extractedShares.length === 0) {
+      return null;
     }
+
+    return {
+      format: detected.format,
+      rawShare: detected.extractedShares[0],
+    };
   }
 
   updateFilesList() {
@@ -661,39 +664,75 @@ export class RecoveryTabManager {
     if (!inputText) {
       this.updateStatus('waiting', t('waitingForInput'), statusDiv);
       recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
       return;
     }
 
-    const shareStrings = inputText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
+    const detectedInput = detectShareFormat(inputText);
+    const extractedShares = detectedInput.extractedShares || [];
 
-    if (shareStrings.length === 0) {
-      this.updateStatus('waiting', t('waitingForInput'), statusDiv);
-      recoverBtn.disabled = true;
-      return;
-    }
-
-    const formatAnalysis = analyzePastedShareFormats(shareStrings);
-    if (formatAnalysis.isMixedPlainAndGpg) {
-      this.updateStatus('invalid', t('errors.mixedPastedShareFormats'), statusDiv);
-      recoverBtn.disabled = true;
-      return;
-    }
-    if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount > 0) {
-      this.updateStatus('waiting', t('encryption.passwordRequired'), statusDiv);
-      recoverBtn.disabled = false;
-      return;
-    }
-    if (formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount === 0 && formatAnalysis.unknownCount > 0) {
+    if (extractedShares.length === 0) {
       this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
       recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
       return;
     }
 
-    const validation = validateShareCollection(shareStrings);
-    this.processValidationResult(validation, statusDiv, recoverBtn);
+    const detected = detectShareCollectionFormat(extractedShares);
+
+    if (detected.hasIncompatibleSlip39Sets) {
+      this.updateStatus('invalid', t('errors.incompatibleSlip39Sets'), statusDiv);
+      recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
+      return;
+    }
+
+    if (detected.isMixed) {
+      const isPlainAndEncryptedMix =
+        detected.glovCount > 0 &&
+        detected.glovEncryptedCount > 0 &&
+        detected.slip39Count === 0;
+
+      this.updateStatus(
+        'invalid',
+        isPlainAndEncryptedMix ? t('errors.mixedPastedShareFormats') : t('errors.mixedGlovAndSlip39'),
+        statusDiv,
+      );
+      recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
+      return;
+    }
+
+    if (detected.format === SHARE_FORMAT.GLOV_SECURE_ENCRYPTED) {
+      this.updateStatus('waiting', t('encryption.passwordRequired'), statusDiv);
+      recoverBtn.disabled = false;
+      this.updateDetectedFormatBadge(SHARE_FORMAT.GLOV_SECURE_ENCRYPTED);
+      return;
+    }
+
+    if (detected.format === SHARE_FORMAT.SLIP39) {
+      this.updateStatus(
+        'valid',
+        `Detected ${extractedShares.length} SLIP-39 share(s). Recovery can start when threshold is met.`,
+        statusDiv,
+      );
+      recoverBtn.disabled = false;
+      this.validShareCount = extractedShares.length;
+      this.currentThreshold = 0;
+      this.updateDetectedFormatBadge(SHARE_FORMAT.SLIP39);
+      return;
+    }
+
+    if (detected.format === SHARE_FORMAT.GLOV_SECURE) {
+      const validation = validateShareCollection(extractedShares);
+      this.processValidationResult(validation, statusDiv, recoverBtn);
+      this.updateDetectedFormatBadge(SHARE_FORMAT.GLOV_SECURE);
+      return;
+    }
+
+    this.updateStatus('invalid', t('errors.invalidShareFormat'), statusDiv);
+    recoverBtn.disabled = true;
+    this.clearDetectedFormatBadge();
   }
 
   validateFileUpload() {
@@ -705,6 +744,7 @@ export class RecoveryTabManager {
     if (this.uploadedFiles.length === 0) {
       this.updateStatus('waiting', t('waitingForUpload'), statusDiv);
       recoverBtn.disabled = true;
+      this.clearDetectedFormatBadge();
       return;
     }
 
@@ -746,6 +786,27 @@ export class RecoveryTabManager {
     statusDiv.appendChild(spanElement);
   }
 
+  updateDetectedFormatBadge(format) {
+    const badge = getElement('#detectedFormatBadge');
+    if (!badge) return;
+
+    const label = getDetectedFormatLabel(format);
+    if (!label) {
+      badge.textContent = '';
+      toggleElement(badge, false);
+      this.currentDetectedFormat = SHARE_FORMAT.UNKNOWN;
+      return;
+    }
+
+    badge.textContent = label;
+    toggleElement(badge, true);
+    this.currentDetectedFormat = format;
+  }
+
+  clearDetectedFormatBadge() {
+    this.updateDetectedFormatBadge(SHARE_FORMAT.UNKNOWN);
+  }
+
   getCurrentShares() {
     if (this.activeTab === 'paste') {
       const input = getElement('#recoverInput');
@@ -754,14 +815,12 @@ export class RecoveryTabManager {
       const inputText = input.value.trim();
       if (!inputText) return [];
 
-      return inputText
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
+      const detected = detectShareFormat(inputText);
+      return detected.extractedShares || [];
     } else {
       return this.uploadedFiles
-        .filter((file) => file.status === 'valid' && file.shareData)
-        .map((file) => file.shareData);
+        .filter((file) => file.status === 'valid' && file.shareData && typeof file.shareData.rawShare === 'string')
+        .map((file) => file.shareData.rawShare);
     }
   }
 

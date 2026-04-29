@@ -29,6 +29,11 @@ export const TRANSLATIONS = {
     words24: '24 words',
     totalSharesLabel: 'Total Shares',
     thresholdLabel: 'Shares Required for Recovery',
+    backupFormatLabel: 'Backup format',
+    backupFormatGlov: 'GLOV Secure format - recommended / default',
+    backupFormatSlip39: 'SLIP-39 compatible format - for compatible wallets',
+    backupFormatHelp:
+      'Use GLOV Secure format for encrypted notarial backups and printable shard sheets. Use SLIP-39 compatible format only when you need interoperability with SLIP-39 wallets.',
     sharesOption: (count) => `${count} shares`,
 
     // Input section
@@ -112,6 +117,10 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
         'Do not mix plain shares and GPG shares in pasted input. Paste one format only.',
       mixedUploadedShareFormats:
         'Do not mix plain share files and GPG share files in the same upload set.',
+      mixedGlovAndSlip39:
+        'You cannot mix GLOV Secure shards and SLIP-39 shares in the same recovery.',
+      incompatibleSlip39Sets:
+        'You cannot mix incompatible SLIP-39 share sets in the same recovery.',
       inconsistentShareSet:
         'These shares do not belong to the same generated set, or some are missing the set identifier.',
       insufficientShares: (required, provided) =>
@@ -280,6 +289,11 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
     words24: '24 mots',
     totalSharesLabel: 'Nombre total de shares',
     thresholdLabel: 'Shares requises pour la récupération',
+    backupFormatLabel: 'Format de sauvegarde',
+    backupFormatGlov: 'Format GLOV Secure - recommande / par defaut',
+    backupFormatSlip39: 'Format compatible SLIP-39 - pour wallets compatibles',
+    backupFormatHelp:
+      'Utilisez le format GLOV Secure pour les sauvegardes notariales chiffrees et les feuilles de shares imprimables. Utilisez le format compatible SLIP-39 uniquement lorsque vous avez besoin d interoperabilite avec des wallets SLIP-39.',
     sharesOption: (count) => `${count} shares`,
 
     inputTitle: 'Saisir la phrase mnémonique',
@@ -357,6 +371,10 @@ eyJ0aHJlc2hvbGQiOjMsInNoYXJlSW5kZXgiOjMsImRhdGEiOiJhYmNkZWZnaGlqa2xtbm9wcXJzdHV2
         'Ne melange pas des shares en clair et des shares GPG dans la zone de collage. Colle un seul format a la fois.',
       mixedUploadedShareFormats:
         'Ne melange pas des fichiers de shares en clair et des fichiers de shares GPG dans le meme lot.',
+      mixedGlovAndSlip39:
+        'You cannot mix GLOV Secure shards and SLIP-39 shares in the same recovery.',
+      incompatibleSlip39Sets:
+        'You cannot mix incompatible SLIP-39 share sets in the same recovery.',
       inconsistentShareSet:
         'Ces shares ne proviennent pas du meme lot genere, ou certaines n’ont pas d’identifiant de lot.',
       insufficientShares: (required, provided) =>

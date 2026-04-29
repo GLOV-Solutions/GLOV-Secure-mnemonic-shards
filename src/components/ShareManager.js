@@ -12,6 +12,14 @@ import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, INFO_MESSAGES
 import { t } from '../utils/i18n.js';
 import { encryptWithPassword, decryptWithPassword, validatePasswordStrength, validatePasswordMatch } from '../utils/encryption.js';
 import { passwordDialog } from './PasswordDialog.js';
+import { exportShares, recoverFromShares, SHARE_FORMAT } from '../formats/index.js';
+
+const BUTTON_ICONS = {
+  copy: `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
+  copied: `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>`,
+  download: `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>`,
+  qr: `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3h-3z"></path><path d="M18 18h3v3h-3z"></path><path d="M17 14h4"></path><path d="M14 18v3"></path></svg>`,
+};
 
 function generateShareSetId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -31,10 +39,45 @@ export class ShareManager {
   constructor() {
     this.currentShares = [];
     this.currentThreshold = 0;
+    this.currentTotal = 0;
+    this.currentFormat = SHARE_FORMAT.GLOV_SECURE;
     this.copiedShares = new Set(); // Track indices of shares already copied
     this.isEncryptionEnabled = false; // Whether encryption is enabled
     this.encryptionPassword = ''; // Encryption password
     this.encryptedShares = []; // Encrypted shares cache
+  }
+
+  setBackupFormat(format) {
+    this.currentFormat = format === SHARE_FORMAT.SLIP39 ? SHARE_FORMAT.SLIP39 : SHARE_FORMAT.GLOV_SECURE;
+    this.syncEncryptionSectionVisibility();
+  }
+
+  syncEncryptionSectionVisibility() {
+    const encryptionSection = getElement(SELECTORS.ENCRYPTION_SECTION);
+    const enableEncryptionCheckbox = getElement(SELECTORS.ENABLE_ENCRYPTION);
+    const encryptionFields = getElement(SELECTORS.ENCRYPTION_FIELDS);
+    const isGlovMode = this.currentFormat === SHARE_FORMAT.GLOV_SECURE;
+
+    if (encryptionSection) {
+      toggleElement(encryptionSection, isGlovMode);
+    }
+
+    if (!isGlovMode) {
+      this.isEncryptionEnabled = false;
+      this.encryptionPassword = '';
+      if (enableEncryptionCheckbox) {
+        enableEncryptionCheckbox.checked = false;
+        enableEncryptionCheckbox.disabled = true;
+      }
+      if (encryptionFields) {
+        toggleElement(encryptionFields, false);
+      }
+      return;
+    }
+
+    if (enableEncryptionCheckbox) {
+      enableEncryptionCheckbox.disabled = false;
+    }
   }
 
   getShareMeta(shareContent) {
@@ -182,7 +225,7 @@ export class ShareManager {
    * @param {number} threshold - shares required to recover
    * @returns {Promise<boolean>} success
    */
-  async generateShares(words, totalShares, threshold) {
+  async generateShares(words, totalShares, threshold, format = SHARE_FORMAT.GLOV_SECURE) {
     try {
       // Validate mnemonic
       const validation = validateMnemonic(words);
@@ -198,25 +241,19 @@ export class ShareManager {
         return false;
       }
 
-      // Generate shares
+      const normalizedFormat = format === SHARE_FORMAT.SLIP39 ? SHARE_FORMAT.SLIP39 : SHARE_FORMAT.GLOV_SECURE;
       const mnemonic = words.join(' ');
-      const secretBytes = new TextEncoder().encode(mnemonic);
-      const rawShares = await split(secretBytes, totalShares, threshold);
-      const setId = generateShareSetId();
-
-      // Base64-encode shares
-      this.currentShares = rawShares.map((share, index) => {
-        const shareData = {
-          setId,
-          index: index + 1,
-          threshold: threshold,
-          total: totalShares,
-          data: btoa(String.fromCharCode(...share)),
-        };
-        return btoa(JSON.stringify(shareData));
+      const exportResult = await exportShares({
+        mnemonic,
+        total: totalShares,
+        threshold,
+        format: normalizedFormat,
       });
 
+      this.currentShares = exportResult.shares;
       this.currentThreshold = threshold;
+      this.currentTotal = totalShares;
+      this.currentFormat = normalizedFormat;
       this.encryptedShares = []; // reset encrypted cache
       this.copiedShares.clear(); // reset copy-state
 
@@ -268,23 +305,29 @@ export class ShareManager {
     const buttons = createElement('div', ['share-buttons']);
 
     const copyBtn = createElement('button', ['copy-btn']);
+    copyBtn.type = 'button';
+    copyBtn.classList.add('icon-action-btn');
 
     // If this share was already copied, keep the success state
     if (this.copiedShares.has(index)) {
-      copyBtn.textContent = t('success.copySuccess');
+      this.setIconButton(copyBtn, BUTTON_ICONS.copied, t('success.copySuccess'));
       toggleClass(copyBtn, CSS_CLASSES.COPIED, true);
     } else {
-      copyBtn.textContent = t('copy');
+      this.setIconButton(copyBtn, BUTTON_ICONS.copy, t('copy'));
     }
 
     addEvent(copyBtn, 'click', () => this.copyShare(copyBtn, share, index));
 
     const downloadBtn = createElement('button', ['download-btn']);
-    downloadBtn.textContent = t('download');
+    downloadBtn.type = 'button';
+    downloadBtn.classList.add('icon-action-btn');
+    this.setIconButton(downloadBtn, BUTTON_ICONS.download, t('download'));
     addEvent(downloadBtn, 'click', () => this.downloadShare(share, index));
 
     const qrBtn = createElement('button', ['download-btn']);
-    qrBtn.textContent = t('qr.button');
+    qrBtn.type = 'button';
+    qrBtn.classList.add('icon-action-btn');
+    this.setIconButton(qrBtn, BUTTON_ICONS.qr, t('qr.button'));
     addEvent(qrBtn, 'click', () => this.showQrPrintView(share, index));
 
     buttons.appendChild(copyBtn);
@@ -303,6 +346,13 @@ export class ShareManager {
     return shareItem;
   }
 
+  setIconButton(button, iconSvg, label) {
+    if (!button) return;
+    setHTML(button, `<span class="btn-icon">${iconSvg}</span>`);
+    button.setAttribute('title', label);
+    button.setAttribute('aria-label', label);
+  }
+
   /**
    * Copy a share to clipboard
    * @param {Element} button
@@ -316,7 +366,7 @@ export class ShareManager {
       // Mark as copied (sticky)
       this.copiedShares.add(shareIndex);
 
-      button.textContent = t('success.copySuccess');
+      this.setIconButton(button, BUTTON_ICONS.copied, t('success.copySuccess'));
       toggleClass(button, CSS_CLASSES.COPIED, true);
     } else {
       this.showError(t('errors.copyFailed'));
@@ -330,6 +380,11 @@ export class ShareManager {
    */
   async downloadShare(shareContent, shareIndex) {
     try {
+      if (this.currentFormat === SHARE_FORMAT.SLIP39) {
+        this.downloadStandardShare(shareContent, shareIndex);
+        return;
+      }
+
       const encryptionValidation = this.validateEncryptionSettings();
 
       if (this.isEncryptionEnabled && !encryptionValidation.isValid) {
@@ -662,143 +717,97 @@ export class ShareManager {
     recoverBtn.textContent = t('info.recovering');
 
     try {
-      const pastedStringShares = shares.filter((share) => typeof share === 'string');
-      const formatAnalysis = analyzePastedShareFormats(pastedStringShares);
-      if (formatAnalysis.isMixedPlainAndGpg) {
-        throw new Error(t('errors.mixedPastedShareFormats'));
-      }
-      if (pastedStringShares.length > 0 && formatAnalysis.plainCount === 0 && formatAnalysis.gpgCount === 0 && formatAnalysis.unknownCount > 0) {
-        throw new Error(t('errors.invalidShareFormat'));
+      const rawShares = (Array.isArray(shares) ? shares : [])
+        .map((share) => {
+          if (typeof share === 'string') return share.trim();
+          if (share && typeof share === 'object' && typeof share.rawShare === 'string') {
+            return share.rawShare.trim();
+          }
+          return '';
+        })
+        .filter((share) => share.length > 0);
+
+      if (rawShares.length === 0) {
+        throw new Error(t('errors.noValidShares'));
       }
 
-      // Classify shares (encrypted vs plain)
-      let isEncrypted = false;
-      const validShareData = [];
+      const plainShares = [];
+      const encryptedShares = [];
 
-      for (const share of shares) {
-        if (share.encrypted) {
-          isEncrypted = true;
-          validShareData.push(share);
+      for (const rawShare of rawShares) {
+        const normalized = normalizeShardInput(rawShare);
+        if (normalized.isValid && normalized.type === 'gpg') {
+          encryptedShares.push(normalized.value);
           continue;
         }
-
-        try {
-          if (typeof share === 'string') {
-            const normalized = normalizeShardInput(share);
-            if (normalized.isValid && normalized.type === 'gpg') {
-              isEncrypted = true;
-              validShareData.push({ encrypted: true, content: normalized.value });
-              continue;
-            }
-            if (!normalized.isValid || normalized.type !== 'plain') {
-              continue;
-            }
-
-            const shareData = JSON.parse(atob(normalized.value));
-            if (shareData.threshold && shareData.index && shareData.data) {
-              validShareData.push(shareData);
-            }
-          } else if (share.threshold && share.index && share.data) {
-            validShareData.push(share);
-          }
-        } catch (e) {
-          isEncrypted = true;
-          validShareData.push({ encrypted: true, content: share });
-        }
+        plainShares.push(rawShare);
       }
 
-      // Decrypt if needed
-      if (isEncrypted) {
+      if (plainShares.length > 0 && encryptedShares.length > 0) {
+        throw new Error(t('errors.mixedPastedShareFormats'));
+      }
+
+      let finalShares = plainShares.slice();
+
+      if (encryptedShares.length > 0) {
         let password = '';
         let isRetry = false;
 
         try {
           password = await this.getPasswordFromDialog(isRetry);
-        } catch (error) {
+        } catch {
           throw new Error(t('encryption.passwordRequired'));
         }
 
         this.showInfo(t('encryption.decryptingShares'));
-
-        const encryptedShares = validShareData.filter((share) => share.encrypted);
-        const decryptedShares = [];
-        let decryptionSuccess = false;
+        finalShares = [];
 
         for (const encryptedShare of encryptedShares) {
           try {
-            const decryptedShare = await decryptWithPassword(encryptedShare.content, password);
-            const shareData = JSON.parse(atob(decryptedShare));
-            if (shareData.threshold && shareData.index && shareData.data) {
-              decryptedShares.push(shareData);
-              decryptionSuccess = true;
-            }
-          } catch (e) {
-            if (/invalid password|wrong password/i.test(e.message)) {
-              // Retry once
+            const decryptedShare = await decryptWithPassword(encryptedShare, password);
+            finalShares.push(decryptedShare);
+          } catch (error) {
+            if (/invalid password|wrong password/i.test(error.message || '')) {
               isRetry = true;
               try {
                 password = await this.getPasswordFromDialog(isRetry);
-                const decryptedShare = await decryptWithPassword(encryptedShare.content, password);
-                const shareData = JSON.parse(atob(decryptedShare));
-                if (shareData.threshold && shareData.index && shareData.data) {
-                  decryptedShares.push(shareData);
-                  decryptionSuccess = true;
-                }
+                const decryptedShare = await decryptWithPassword(encryptedShare, password);
+                finalShares.push(decryptedShare);
               } catch (retryError) {
-                if (/invalid password|wrong password/i.test(retryError.message)) {
+                if (/invalid password|wrong password/i.test(retryError.message || '')) {
                   throw new Error(t('encryption.invalidPassword'));
                 }
-                // Other decryption errors: continue
               }
             }
-            // Other errors: continue
           }
         }
-
-        // Merge decrypted with existing plain shares
-        const finalShares = validShareData.filter((share) => !share.encrypted).concat(decryptedShares);
 
         if (finalShares.length === 0) {
           throw new Error(t('encryption.decryptionFailed') + t('errors.noValidShares'));
         }
-
-        const strictValidation = validateAndNormalizeShareObjects(finalShares);
-        if (!strictValidation.isValid) {
-          throw new Error(strictValidation.errors[0] || t('errors.invalidShareFormat'));
-        }
-
-        const threshold = strictValidation.threshold;
-        const shareBytes = strictValidation.shares.slice(0, threshold).map((data) => data.bytes);
-
-        const recoveredBytes = await combine(shareBytes);
-        const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
-        this.assertRecoveredMnemonicIsValid(recoveredMnemonic);
-
-        this.displayRecoverResult(recoveredMnemonic, strictValidation.shares.length, threshold);
-        return true;
       }
 
-      // Plain path
-      if (validShareData.length === 0) {
-        throw new Error(t('errors.noValidShares'));
-      }
+      const recovered = await recoverFromShares({
+        shares: finalShares,
+        password: '',
+      });
 
-      const strictValidation = validateAndNormalizeShareObjects(validShareData);
-      if (!strictValidation.isValid) {
-        throw new Error(strictValidation.errors[0] || t('errors.invalidShareFormat'));
-      }
-
-      const threshold = strictValidation.threshold;
-      const shareBytes = strictValidation.shares.slice(0, threshold).map((data) => data.bytes);
-
-      const recoveredBytes = await combine(shareBytes);
-      const recoveredMnemonic = new TextDecoder().decode(recoveredBytes);
-      this.assertRecoveredMnemonicIsValid(recoveredMnemonic);
-
-      this.displayRecoverResult(recoveredMnemonic, strictValidation.shares.length, threshold);
+      this.assertRecoveredMnemonicIsValid(recovered.mnemonic);
+      this.displayRecoverResult(
+        recovered.mnemonic,
+        recovered.usedShares || finalShares.length,
+        recovered.threshold || finalShares.length,
+      );
       return true;
     } catch (error) {
-      this.displayRecoverError(error.message);
+      const message = error?.message || t('errors.invalidShareFormat');
+      if (/cannot mix glov secure shards and slip-39 shares/i.test(message)) {
+        this.displayRecoverError(t('errors.mixedGlovAndSlip39'));
+      } else if (/cannot mix incompatible slip-39 share sets/i.test(message)) {
+        this.displayRecoverError(t('errors.incompatibleSlip39Sets'));
+      } else {
+        this.displayRecoverError(message);
+      }
       return false;
     } finally {
       // Restore button state
@@ -897,6 +906,12 @@ export class ShareManager {
   getRecoveryErrorHint(errorMessage) {
     if (/set identifier|same set/i.test(errorMessage)) {
       return t('errors.inconsistentShareSet');
+    }
+    if (/cannot mix glov secure shards and slip-39 shares/i.test(errorMessage)) {
+      return t('errors.mixedGlovAndSlip39');
+    }
+    if (/cannot mix incompatible slip-39 share sets/i.test(errorMessage)) {
+      return t('errors.incompatibleSlip39Sets');
     }
     if (/plain shares and GPG|plain share files and GPG/i.test(errorMessage)) {
       return errorMessage;
@@ -1065,6 +1080,14 @@ export class ShareManager {
   }
 
   async buildQrPayload(shareContent) {
+    if (this.currentFormat === SHARE_FORMAT.SLIP39) {
+      return {
+        payload: shareContent,
+        isEncryptedQr: false,
+        recommendation: t('backupFormatSlip39'),
+      };
+    }
+
     if (this.isEncryptionEnabled) {
       const encryptionValidation = this.validateEncryptionSettings();
       if (!encryptionValidation.isValid) {
@@ -1099,7 +1122,15 @@ export class ShareManager {
     popup.document.close();
 
     try {
-      const meta = this.getShareMeta(shareContent);
+      const meta = this.currentFormat === SHARE_FORMAT.GLOV_SECURE
+        ? this.getShareMeta(shareContent)
+        : {
+          index: shareIndex,
+          total: this.currentTotal || this.currentShares.length,
+          threshold: this.currentThreshold,
+          setId: 'SLIP39',
+        };
+
       if (!meta) {
         throw new Error(t('qr.invalidPayload'));
       }

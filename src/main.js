@@ -67,6 +67,7 @@ class MnemonicSplitApp {
     this.shareManager = new ShareManager();
     this.recoveryTabManager = new RecoveryTabManager();
     this.currentWordCount = MNEMONIC_CONFIG.DEFAULT_WORD_COUNT;
+    this.currentBackupFormat = 'glov';
 
     this.init();
   }
@@ -134,6 +135,11 @@ class MnemonicSplitApp {
     const totalSharesSelect = getElement(SELECTORS.TOTAL_SHARES);
     if (totalSharesSelect) {
       addEvent(totalSharesSelect, 'change', () => this.updateThresholdOptions());
+    }
+
+    const backupFormatSelect = getElement(SELECTORS.BACKUP_FORMAT);
+    if (backupFormatSelect) {
+      addEvent(backupFormatSelect, 'change', () => this.handleBackupFormatChange());
     }
 
     // Generate shares
@@ -314,6 +320,14 @@ class MnemonicSplitApp {
     this.updateWordCountButtons();
     this.mnemonicInput.renderInputs();
     this.shareManager.hideAllAlerts();
+    this.handleBackupFormatChange();
+  }
+
+  handleBackupFormatChange() {
+    const backupFormatSelect = getElement(SELECTORS.BACKUP_FORMAT);
+    const selected = backupFormatSelect ? backupFormatSelect.value : 'glov';
+    this.currentBackupFormat = selected === 'slip39' ? 'slip39' : 'glov';
+    this.shareManager.setBackupFormat(this.currentBackupFormat);
   }
 
   setWordCount(count) {
@@ -367,7 +381,12 @@ class MnemonicSplitApp {
     const totalShares = parseInt(getElement(SELECTORS.TOTAL_SHARES).value, 10);
     const threshold = parseInt(getElement(SELECTORS.THRESHOLD).value, 10);
 
-    const success = await this.shareManager.generateShares(validation.words, totalShares, threshold);
+    const success = await this.shareManager.generateShares(
+      validation.words,
+      totalShares,
+      threshold,
+      this.currentBackupFormat
+    );
     if (success) this.scrollToResult();
   }
 

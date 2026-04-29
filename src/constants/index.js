@@ -64,6 +64,7 @@ export const SELECTORS = {
   WORDS_GRID: '#wordsGrid',
   TOTAL_SHARES: '#totalShares',
   THRESHOLD: '#threshold',
+  BACKUP_FORMAT: '#backupFormat',
 
   // Buttons
   GENERATE_BTN: '#generateBtn',
@@ -87,6 +88,7 @@ export const SELECTORS = {
   GENERAL_ERROR_ALERT: '#generalErrorAlert',
   SUCCESS_ALERT: '#successAlert',
   INPUT_STATUS: '#inputStatus',
+  DETECTED_FORMAT_BADGE: '#detectedFormatBadge',
 
   // Display values
   THRESHOLD_DISPLAY: '#thresholdDisplay',

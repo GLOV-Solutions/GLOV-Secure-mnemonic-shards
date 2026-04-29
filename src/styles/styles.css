@@ -757,6 +757,29 @@ select:hover {
   align-items: center;
 }
 
+.icon-action-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.btn-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .share-content {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
   font-size: var(--font-size-sm);
