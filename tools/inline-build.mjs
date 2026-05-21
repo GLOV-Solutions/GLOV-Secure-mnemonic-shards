@@ -48,6 +48,13 @@ function isExternalPath(p) {
   return /^https?:\/\//i.test(p) || /^\/\//.test(p);
 }
 
+function escapeInlineScript(js) {
+  // Prevent accidental script termination and legacy HTML parser edge cases.
+  return js
+    .replace(/<\/script/gi, '<\\/script')
+    .replace(/<!--/g, '<\\!--');
+}
+
 function toFsPath(href) {
   // Resolve href to a file under dist (strip leading '/')
   const cleaned = href.startsWith('/') ? href.slice(1) : href;
@@ -84,11 +91,15 @@ async function inlineAssets(html) {
     const postAttrs = m[3] || '';
     if (isExternalPath(src)) continue;
     const jsPath = toFsPath(src);
-    const typeMatch = /type=["']([^"']+)["']/i.exec(preAttrs + ' ' + postAttrs);
-    const typeAttr = typeMatch ? ` type="${typeMatch[1]}"` : '';
+    const mergedAttrs = `${preAttrs} ${postAttrs}`;
+    const attrs = mergedAttrs
+      .replace(/\bsrc=["'][^"']+["']/i, '')
+      .trim();
+    const attrString = attrs ? ` ${attrs}` : '';
     try {
       const js = await fs.readFile(jsPath, 'utf8');
-      const scriptTag = `<script${typeAttr}>${js}</script>`;
+      const safeJs = escapeInlineScript(js);
+      const scriptTag = `<script${attrString}>${safeJs}</script>`;
       result = result.replace(fullTag, scriptTag);
     } catch {
       // If missing, keep original tag
@@ -110,4 +121,3 @@ try {
   console.error('[inline-build] Failed:', err.message || err);
   process.exit(1);
 }
-
