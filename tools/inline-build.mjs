@@ -1,8 +1,9 @@
 // Inline built CSS/JS into dist/index.html and output dist/index.single.html
-// Uses html-minifier-terser (or html-minifier) if available to minify HTML/CSS/JS.
+// Uses html-minifier-terser (or html-minifier) if available to minify HTML/CSS.
 // Keeps it dependency-light with graceful fallback minification.
 
 import { promises as fs } from 'node:fs';
+import { Buffer } from 'node:buffer';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,37 +12,31 @@ const distDir = resolve(__dirname, '..', 'dist');
 const inputHtmlPath = resolve(distDir, 'index.html');
 const outputHtmlPath = resolve(distDir, 'index.single.html');
 
-// Try to load html-minifier-terser first, then html-minifier; fallback to no-op
+// Try to load html-minifier-terser first, then html-minifier; fallback to no-op.
 async function loadMinifier() {
+  const options = {
+    collapseWhitespace: true,
+    removeComments: true,
+    removeRedundantAttributes: true,
+    removeScriptTypeAttributes: true,
+    removeStyleLinkTypeAttributes: true,
+    useShortDoctype: true,
+    minifyCSS: true,
+    // Vite already minifies the JS bundle. Re-minifying a huge inline module
+    // increases the chance of parser regressions for no practical gain.
+    minifyJS: false,
+    keepClosingSlash: true,
+  };
+
   try {
     const m = await import('html-minifier-terser');
-    return async (html) => await m.minify(html, {
-      collapseWhitespace: true,
-      removeComments: true,
-      removeRedundantAttributes: true,
-      removeScriptTypeAttributes: true,
-      removeStyleLinkTypeAttributes: true,
-      useShortDoctype: true,
-      minifyCSS: true,
-      minifyJS: true,
-      keepClosingSlash: true,
-    });
+    return async (html) => await m.minify(html, options);
   } catch {}
   try {
     const m = await import('html-minifier');
-    return (html) => m.minify(html, {
-      collapseWhitespace: true,
-      removeComments: true,
-      removeRedundantAttributes: true,
-      removeScriptTypeAttributes: true,
-      removeStyleLinkTypeAttributes: true,
-      useShortDoctype: true,
-      minifyCSS: true,
-      minifyJS: true,
-      keepClosingSlash: true,
-    });
+    return (html) => m.minify(html, options);
   } catch {}
-  return (html) => html; // fallback no-op
+  return (html) => html;
 }
 
 function isExternalPath(p) {
@@ -61,6 +56,16 @@ function toFsPath(href) {
   return resolve(distDir, cleaned);
 }
 
+function svgDataUrl(svg) {
+  return `data:image/svg+xml;base64,${Buffer.from(svg, 'utf8').toString('base64')}`;
+}
+
+function replaceLiteral(source, search, replacement) {
+  // Replacement strings expand $&, $`, and $'. Use a callback so bundled
+  // assets are inserted byte-for-byte.
+  return source.replace(search, () => replacement);
+}
+
 async function inlineAssets(html) {
   let result = html;
 
@@ -75,7 +80,7 @@ async function inlineAssets(html) {
     try {
       const css = await fs.readFile(cssPath, 'utf8');
       const styleTag = `<style>${css}</style>`;
-      result = result.replace(fullTag, styleTag);
+      result = replaceLiteral(result, fullTag, styleTag);
     } catch {
       // If missing, keep original tag
     }
@@ -100,7 +105,26 @@ async function inlineAssets(html) {
       const js = await fs.readFile(jsPath, 'utf8');
       const safeJs = escapeInlineScript(js);
       const scriptTag = `<script${attrString}>${safeJs}</script>`;
-      result = result.replace(fullTag, scriptTag);
+      result = replaceLiteral(result, fullTag, scriptTag);
+    } catch {
+      // If missing, keep original tag
+    }
+  }
+
+  // Inline local SVG images used by the HTML shell.
+  const svgImgRe = /<img\s+([^>]*?)src=["']([^"']+\.svg)["']([^>]*)>/gi;
+  const svgImgMatches = [...result.matchAll(svgImgRe)];
+  for (const m of svgImgMatches) {
+    const fullTag = m[0];
+    const preAttrs = m[1] || '';
+    const src = m[2];
+    const postAttrs = m[3] || '';
+    if (isExternalPath(src) || src.startsWith('data:')) continue;
+    const svgPath = toFsPath(src);
+    try {
+      const svg = await fs.readFile(svgPath, 'utf8');
+      const imgTag = `<img ${preAttrs}src="${svgDataUrl(svg)}"${postAttrs}>`;
+      result = replaceLiteral(result, fullTag, imgTag);
     } catch {
       // If missing, keep original tag
     }
