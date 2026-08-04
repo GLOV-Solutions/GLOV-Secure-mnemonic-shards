@@ -3,12 +3,12 @@
  * Responsible for generating shares, displaying them, copying, and downloading
  */
 
-import { split, combine } from 'shamir-secret-sharing';
+import { combine } from 'shamir-secret-sharing';
 import QRCode from 'qrcode';
 import { getElement, createElement, toggleElement, toggleClass, setHTML, setText, clearElement, addEvent } from '../utils/dom.js';
-import { copyToClipboard, downloadFile, formatDateTime, base64Encode } from '../utils/helpers.js';
+import { copyToClipboard, downloadFile, formatDateTime } from '../utils/helpers.js';
 import { analyzePastedShareFormats, validateMnemonic, validateShareCollection, validateAndNormalizeShareObjects, normalizeShardInput, wrapPlainShareForQr, wrapEncryptedShareForQr } from '../utils/validation.js';
-import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, INFO_MESSAGES, FILE_TEMPLATES } from '../constants/index.js';
+import { SELECTORS, CSS_CLASSES, ERROR_MESSAGES, SUCCESS_MESSAGES, FILE_TEMPLATES } from '../constants/index.js';
 import { t } from '../utils/i18n.js';
 import { encryptWithPassword, decryptWithPassword, validatePasswordStrength, validatePasswordMatch } from '../utils/encryption.js';
 import { passwordDialog } from './PasswordDialog.js';
@@ -20,20 +20,6 @@ const BUTTON_ICONS = {
   download: `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>`,
   qr: `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3h-3z"></path><path d="M18 18h3v3h-3z"></path><path d="M17 14h4"></path><path d="M14 18v3"></path></svg>`,
 };
-
-function generateShareSetId() {
-  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID();
-  }
-
-  if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
-    const bytes = new Uint8Array(16);
-    globalThis.crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-  }
-
-  throw new Error('Secure random source is not available for share set generation.');
-}
 
 export class ShareManager {
   constructor() {

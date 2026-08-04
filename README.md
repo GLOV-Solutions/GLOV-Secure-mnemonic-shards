@@ -22,7 +22,7 @@ Privacy‑first, offline tool to split a BIP‑39 mnemonic into multiple shards 
 
 ## Requirements
 
-- Node.js 20+ (recommended) or Bun 1.0+
+- Node.js 20.19+ or 22.12+
 - Docker (optional) for containerized deployment
 
 ## Quick Start
@@ -35,16 +35,9 @@ docker-compose up -d --build
 # Open http://localhost:8848
 ```
 
-### Local development (Bun)
+### Local development
 ```bash
-bun install
-bun run dev
-# Open http://localhost:5173
-```
-
-### Local development (npm)
-```bash
-npm install
+npm ci
 npm run dev
 # Open http://localhost:5173
 ```
@@ -61,24 +54,18 @@ npx http-server dist -p 8080
 
 ### Standard bundle
 ```bash
-bun run build
+npm run build
 ```
 Outputs to `dist/` (open `dist/index.html`).
 
 ### Single‑file bundle + hash
 ```bash
-bun run build:single
+npm run build:single
 ```
 Produces:
 - `dist/index.single.html` (CSS/JS inlined for fully offline/embedded use)
 - `dist/VERSION.txt` (SHA‑256 of the bundle)
 - `dist/manifest.json` (build metadata + deterministic SHA‑256 inventory of `dist/` files)
-
-Alternative via npm:
-```bash
-npm run build
-node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs
-```
 
 ### Verify the hash
 - macOS/Linux:

@@ -1434,7 +1434,7 @@ select:hover {
 
 .password-match.valid::before,
 .password-strength.valid::before {
-  content: 'âœ“';
+  content: '\2713';
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -1459,7 +1459,7 @@ select:hover {
 
 .password-match.invalid::before,
 .password-strength.invalid::before {
-  content: 'âœ•';
+  content: '\2715';
   display: inline-block;
   width: 16px;
   height: 16px;

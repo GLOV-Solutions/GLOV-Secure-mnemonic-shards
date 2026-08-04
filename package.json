@@ -5,19 +5,14 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "bun --bun run vite preview --port 8080 --open",
-    "dev": "bun run vite",
-    "serve": "bun --bun run vite preview --port 8080 --host",
-    "build": "bun run vite build",
+    "start": "vite preview --port 8080 --open",
+    "dev": "vite",
+    "serve": "vite preview --port 8080 --host",
+    "build": "vite build",
     "test": "node tests/offline-regression.mjs",
     "test:offline": "node tests/offline-regression.mjs",
-    "build:single": "bun run vite build && node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs",
-    "preview": "bun run vite preview",
-    "start:npm": "npx http-server -p 8080 -o",
-    "dev:npm": "npm run dev",
-    "serve:npm": "npx http-server -p 8080",
-    "build:npm": "npm run build",
-    "preview:npm": "npm run preview",
+    "build:single": "npm run build && node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs",
+    "preview": "vite preview",
     "deploy": "gh-pages -d dist"
   },
   "keywords": [
@@ -38,9 +33,11 @@
   ],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "dependencies": {
     "@scure/bip39": "^1.6.0",
-    "bun": "^1.3.2",
     "openpgp": "^6.2.2",
     "qrcode": "^1.5.4",
     "shamir-secret-sharing": "^0.0.4",
