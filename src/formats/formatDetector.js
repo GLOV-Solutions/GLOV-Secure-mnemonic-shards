@@ -1,5 +1,6 @@
 import { normalizeShardInput } from '../utils/validation.js';
 import { isSlip39Share } from './slip39Shard.js';
+import { decodeSlip39Metadata, getSlip39SetFingerprint } from './slip39Metadata.js';
 
 export const SHARE_FORMAT = {
   GLOV_SECURE: 'glov',
@@ -33,11 +34,13 @@ function classifySingleValue(value) {
       .split(/\s+/)
       .filter(Boolean)
       .join(' ');
+    const slip39Metadata = decodeSlip39Metadata(normalizedShare);
 
     return {
       format: SHARE_FORMAT.SLIP39,
       value: normalizedShare,
-      slip39Fingerprint: normalizedShare.split(' ').slice(0, 2).join(' '),
+      slip39Metadata,
+      slip39Fingerprint: getSlip39SetFingerprint(slip39Metadata),
     };
   }
 
@@ -52,6 +55,8 @@ function buildCollectionSummary(classifications) {
     unknownCount: 0,
     slip39Fingerprints: new Set(),
   };
+  const slip39MemberThresholds = new Map();
+  let hasInconsistentSlip39Group = false;
 
   for (const item of classifications) {
     if (item.format === SHARE_FORMAT.GLOV_SECURE) summary.glovCount += 1;
@@ -60,6 +65,18 @@ function buildCollectionSummary(classifications) {
       summary.slip39Count += 1;
       if (item.slip39Fingerprint) {
         summary.slip39Fingerprints.add(item.slip39Fingerprint);
+      }
+      if (item.slip39Fingerprint && item.slip39Metadata) {
+        const groupKey = `${item.slip39Fingerprint}:${item.slip39Metadata.groupIndex}`;
+        const knownThreshold = slip39MemberThresholds.get(groupKey);
+        if (
+          knownThreshold !== undefined
+          && knownThreshold !== item.slip39Metadata.memberThreshold
+        ) {
+          hasInconsistentSlip39Group = true;
+        } else {
+          slip39MemberThresholds.set(groupKey, item.slip39Metadata.memberThreshold);
+        }
       }
     }
     else summary.unknownCount += 1;
@@ -81,7 +98,8 @@ function buildCollectionSummary(classifications) {
     ...summary,
     format,
     isMixed: format === SHARE_FORMAT.MIXED,
-    hasIncompatibleSlip39Sets: summary.slip39Fingerprints.size > 1,
+    hasIncompatibleSlip39Sets:
+      summary.slip39Fingerprints.size > 1 || hasInconsistentSlip39Group,
     slip39Fingerprints: Array.from(summary.slip39Fingerprints),
   };
 }

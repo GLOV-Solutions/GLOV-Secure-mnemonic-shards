@@ -9,8 +9,9 @@
     "dev": "vite",
     "serve": "vite preview --port 8080 --host",
     "build": "vite build",
-    "test": "node tests/offline-regression.mjs",
+    "test": "npm run test:offline && npm run test:generation",
     "test:offline": "node tests/offline-regression.mjs",
+    "test:generation": "node tests/generation.mjs",
     "build:single": "npm run build && node tools/inline-build.mjs && node tools/hash.mjs && node tools/manifest.mjs",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist"

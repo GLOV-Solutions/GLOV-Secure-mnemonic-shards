@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
 import { wordlist as canonicalWordlist } from '@scure/bip39/wordlists/english';
-import { split, combine } from 'shamir-secret-sharing';
 import { BIP39_WORDLIST } from '../src/constants/bip39-words.js';
-import { encryptWithPassword, decryptWithPassword } from '../src/utils/encryption.js';
 import { generateMnemonicWords } from '../src/utils/mnemonic.js';
-import { exportShares, recoverFromShares } from '../src/formats/index.js';
-import { detectShareFormat, SHARE_FORMAT } from '../src/formats/formatDetector.js';
 import {
   analyzePastedShareFormats,
   normalizeShardInput,
@@ -161,185 +157,12 @@ function testQrWrappersAndLegacyCompatibility() {
   assert.equal(legacyGpg.type, 'gpg', 'legacy .gpg payload should normalize as gpg');
 }
 
-async function withSecureContext(fn) {
-  const previousWindow = globalThis.window;
-  globalThis.window = { isSecureContext: true };
-  try {
-    await fn();
-  } finally {
-    if (previousWindow === undefined) {
-      delete globalThis.window;
-    } else {
-      globalThis.window = previousWindow;
-    }
-  }
-}
-
-async function testRecoveryRoundTripPlainAndEncrypted() {
-  const mnemonic = generateMnemonicWords(24).join(' ');
-  const secret = new TextEncoder().encode(mnemonic);
-  const threshold = 3;
-  const total = 5;
-  const setId = 'roundtrip-set';
-  const rawShares = await split(secret, total, threshold);
-
-  const plainShares = rawShares.map((share, index) =>
-    encodeShare({
-      setId,
-      index: index + 1,
-      threshold,
-      total,
-      dataBytes: share,
-    })
-  );
-
-  const normalizedPlain = validateAndNormalizeShareObjects(plainShares);
-  assert.equal(normalizedPlain.isValid, true, 'plain shares should normalize');
-
-  const recoveredPlainBytes = await combine(
-    normalizedPlain.shares.slice(0, threshold).map((entry) => entry.bytes)
-  );
-  const recoveredPlain = new TextDecoder().decode(recoveredPlainBytes).trim();
-  assert.equal(recoveredPlain, mnemonic, 'plain roundtrip should recover the same mnemonic');
-
-  await withSecureContext(async () => {
-    const password = 'Strong#Password42';
-    const encryptedShares = [];
-
-    for (const share of plainShares) {
-      encryptedShares.push(await encryptWithPassword(share, password));
-    }
-
-    const decryptedShares = [];
-    for (const encryptedShare of encryptedShares) {
-      decryptedShares.push(await decryptWithPassword(encryptedShare, password));
-    }
-
-    const normalizedDecrypted = validateAndNormalizeShareObjects(decryptedShares);
-    assert.equal(normalizedDecrypted.isValid, true, 'decrypted shares should normalize');
-
-    const recoveredEncryptedBytes = await combine(
-      normalizedDecrypted.shares.slice(0, threshold).map((entry) => entry.bytes)
-    );
-    const recoveredEncrypted = new TextDecoder().decode(recoveredEncryptedBytes).trim();
-    assert.equal(recoveredEncrypted, mnemonic, 'encrypted roundtrip should recover the same mnemonic');
-  });
-}
-
-async function testFormatApiGlovRoundTrip() {
-  const mnemonic = generateMnemonicWords(24).join(' ');
-  const exported = await exportShares({
-    mnemonic,
-    total: 5,
-    threshold: 3,
-    format: 'glov',
-  });
-
-  assert.equal(exported.format, 'glov', 'GLOV export should keep glov format');
-  assert.equal(exported.shares.length, 5, 'GLOV export should return total share count');
-
-  const validation = validateShareCollection(exported.shares);
-  assert.equal(validation.isValid, true, 'GLOV shares from export API should validate');
-
-  const recovered = await recoverFromShares({
-    shares: exported.shares.slice(0, 3),
-    format: 'glov',
-    password: '',
-  });
-  assert.equal(recovered.mnemonic, mnemonic, 'GLOV API recovery should reconstruct mnemonic');
-}
-
-async function testSlip39GenerationAndRecovery() {
-  const mnemonic = generateMnemonicWords(12).join(' ');
-  const exported = await exportShares({
-    mnemonic,
-    total: 5,
-    threshold: 3,
-    format: 'slip39',
-  });
-
-  assert.equal(exported.format, 'slip39', 'SLIP-39 export should keep slip39 format');
-  assert.equal(exported.shares.length, 5, 'SLIP-39 export should return total share count');
-  assert.ok(exported.shares.every((share) => detectShareFormat(share).format === SHARE_FORMAT.SLIP39), 'all generated SLIP-39 shares should be detected');
-
-  const recovered = await recoverFromShares({
-    shares: exported.shares.slice(0, 3),
-    format: 'slip39',
-    password: '',
-  });
-  assert.equal(recovered.mnemonic, mnemonic, 'SLIP-39 API recovery should reconstruct mnemonic');
-}
-
-async function testSlip39DetectionAndMixRejection() {
-  const mnemonic = generateMnemonicWords(12).join(' ');
-  const slipExport = await exportShares({
-    mnemonic,
-    total: 3,
-    threshold: 2,
-    format: 'slip39',
-  });
-
-  const glovExport = await exportShares({
-    mnemonic,
-    total: 3,
-    threshold: 2,
-    format: 'glov',
-  });
-
-  const slipDetection = detectShareFormat(slipExport.shares[0]);
-  assert.equal(slipDetection.format, SHARE_FORMAT.SLIP39, 'SLIP-39 share should be auto-detected');
-
-  await assert.rejects(
-    recoverFromShares({
-      shares: [glovExport.shares[0], slipExport.shares[0]],
-      format: '',
-      password: '',
-    }),
-    /cannot mix glov secure shards and slip-39 shares/i,
-    'mixing GLOV and SLIP-39 must be rejected',
-  );
-}
-
-async function testIncompatibleSlip39SetRejection() {
-  const mnemonicA = generateMnemonicWords(12).join(' ');
-  const mnemonicB = generateMnemonicWords(12).join(' ');
-
-  const setA = await exportShares({
-    mnemonic: mnemonicA,
-    total: 3,
-    threshold: 2,
-    format: 'slip39',
-  });
-
-  const setB = await exportShares({
-    mnemonic: mnemonicB,
-    total: 3,
-    threshold: 2,
-    format: 'slip39',
-  });
-
-  await assert.rejects(
-    recoverFromShares({
-      shares: [setA.shares[0], setB.shares[1]],
-      format: 'slip39',
-      password: '',
-    }),
-    /cannot mix incompatible slip-39 share sets/i,
-    'mixing incompatible SLIP-39 sets must be rejected',
-  );
-}
-
 async function run() {
   testCanonicalWordlist();
   testMnemonicGeneration();
   testPastedFormatAnalysis();
   testShareSetConsistency();
   testQrWrappersAndLegacyCompatibility();
-  await testRecoveryRoundTripPlainAndEncrypted();
-  await testFormatApiGlovRoundTrip();
-  await testSlip39GenerationAndRecovery();
-  await testSlip39DetectionAndMixRejection();
-  await testIncompatibleSlip39SetRejection();
   console.log('offline-regression: all tests passed');
 }
 
