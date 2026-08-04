@@ -36,7 +36,7 @@ export class PasswordDialog {
     this.removeDialog();
 
     // Create overlay element
-    const overlay = createElement('div', ['password-dialog-overlay']);
+    const overlay = createElement('div', ['password-dialog-overlay', 'active']);
 
     // Create dialog container
     const dialog = createElement('div', ['password-dialog']);

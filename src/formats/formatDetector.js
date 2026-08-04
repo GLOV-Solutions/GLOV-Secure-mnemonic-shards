@@ -10,6 +10,8 @@ export const SHARE_FORMAT = {
   UNKNOWN: 'unknown',
 };
 
+const ARMORED_PGP_MESSAGE_PATTERN = /-----BEGIN PGP MESSAGE-----[\s\S]*?-----END PGP MESSAGE-----/g;
+
 function normalizeLine(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -45,6 +47,17 @@ function classifySingleValue(value) {
   }
 
   return { format: SHARE_FORMAT.UNKNOWN, value: null };
+}
+
+function splitShareCandidates(value) {
+  const armoredMessages = value.match(ARMORED_PGP_MESSAGE_PATTERN) || [];
+  const remainingLines = value
+    .replace(ARMORED_PGP_MESSAGE_PATTERN, '\n')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  return [...armoredMessages.map((message) => message.trim()), ...remainingLines];
 }
 
 function buildCollectionSummary(classifications) {
@@ -131,12 +144,8 @@ export function detectShareFormat(input) {
     };
   }
 
-  const lines = normalizedInput
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  const classifications = lines.map((line) => classifySingleValue(line));
+  const classifications = splitShareCandidates(normalizedInput)
+    .map((candidate) => classifySingleValue(candidate));
   const summary = buildCollectionSummary(classifications);
 
   return {
